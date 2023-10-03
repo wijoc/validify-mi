@@ -1,0 +1,13 @@
+{
+  "name": "zvalidate/sdk",
+  "description": "SDK For ZValidate",
+  "require": {
+    "php": "^8.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "ZvalidateSDK\\": "src/"
+    }
+  },
+  "license": "MIT"
+}
