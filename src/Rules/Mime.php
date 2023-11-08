@@ -8,20 +8,17 @@ class MimeRule implements Rule
 {
     public function validate($field, $value, $parameters): bool
     {
-        $theField = strpos($field, '.*') !== false ? explode('.*', $field)[0] : $field;
-
-        if (!array_key_exists($theField, $_FILES) || (is_array($_FILES[$theField]['name']) && count($_FILES[$theField]['name']) <= 0)) {
-            return true;
-        } else {
-            if (strpos($field, '.*') !== false) {
-                $checkValue = [];
-                foreach ($value as $key => $values) {
-                    $checkValue[$key] = in_array(strtolower($_FILES[$theField][$key]['type']), $parameters);
-                }
-
-                return in_array(false, $checkValue) ? false : true;
+        if (is_array($field)) {
+            if (!isset($_FILES[$field[0]]) || empty($_FILES[$field[0]]['name']) || $_FILES[$field[0]]['name'] == "" || $_FILES[$field[0]]['name'] == null) {
+                return true;
             } else {
-                return in_array(strtolower($_FILES[$theField]['type']), $parameters);
+                return in_array(strtolower($_FILES[$field[0]]['type']), $parameters);
+            }
+        } else {
+            if (!isset($_FILES[$field]) || empty($_FILES[$field]['name']) || $_FILES[$field]['name'] == "" || $_FILES[$field]['name'] == null) {
+                return true;
+            } else {
+                return in_array(strtolower($_FILES[$field]['type']), $parameters);
             }
         }
     }

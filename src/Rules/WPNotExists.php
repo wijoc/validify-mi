@@ -5,7 +5,7 @@ namespace V\Rules;
 use V\Rule;
 use Exception;
 
-class WPExistsRule implements Rule
+class WPNotExistsRule implements Rule
 {
     public function validate($field, $value, $parameters): bool
     {
@@ -45,7 +45,7 @@ class WPExistsRule implements Rule
         switch ($table) {
             case 'user':
                 if (function_exists('get_user_by')) {
-                    return get_user_by($selector, $value) ?? false;
+                    return !get_user_by($selector, $value);
                 } else {
                     throw new Exception('Rule only work on wordpress application.');
                 }
@@ -57,6 +57,7 @@ class WPExistsRule implements Rule
                         'orderby'        => 'ID',
                         'post_type'      => $type,
                         'post_status'    => 'publish',
+                        // 'post__in'       => [$value]
                     ];
 
                     switch ($selector) {
@@ -70,14 +71,14 @@ class WPExistsRule implements Rule
 
                     $databaseValue = get_posts($args);
 
-                    return count($databaseValue) < 1 ? false : true;
+                    return count($databaseValue) < 1 ? true : false;
                 } else {
                     throw new Exception('Rule only work on wordpress application.');
                 }
             case 'term':
                 if (function_exists('get_term_by')) {
                     $checkTerm = get_term_by($selector, $value, $type);
-                    return $checkTerm ? true : false;
+                    return $checkTerm ? false : true;
                 } else {
                     throw new Exception('Rule only work on wordpress application.');
                 }
@@ -87,9 +88,9 @@ class WPExistsRule implements Rule
     public function getErrorMessage($field, $parameters): string
     {
         if (strpos($field, '.*') !== false) {
-            return "One of the '" . substr($field, 0, -2) . "' value didn't exists.";
+            return "One of the '" . substr($field, 0, -2) . "' value exists.";
         } else {
-            return "The {$field} didn't exists.";
+            return "The {$field} exists.";
         }
     }
 }

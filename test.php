@@ -5,7 +5,7 @@ error_reporting(E_ALL);
 
 // echo 'a';
 
-require_once './autoload.php';
+require_once './src/autoload.php';
 
 // use V;
 // use V\Rule;

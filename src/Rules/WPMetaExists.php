@@ -12,11 +12,13 @@ class WPMetaExistsRule implements Rule
         if ($value == "" || $value == null || empty($value)) {
             return false;
         } else {
-            //user/meta_key/single or multiple
+            // user/meta_key/single,user_id
+            // post/meta_key/single,post_id
+
             $params     = explode('/', $parameters[0]);
-            $table       = $params[0];
+            $table      = $params[0];
             $metaKey    = $params[1];
-            $single     = $params[2];
+            $single     = isset($params[2]) ?? false;
             $selector   = $parameters[1] ?? null; // post_id or user_id
 
             $this->check($value, $table, $metaKey, $single, $selector);

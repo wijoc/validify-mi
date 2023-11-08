@@ -19,20 +19,23 @@ class GreaterThanRule implements RuleWithRequest
      */
     public function validate($field, $value, $request, $parameters): bool
     {
-        if ($value == "" || $value == null) {
-            return true;
+        if (is_array($field)) {
         } else {
-            if (is_numeric($parameters)) {
-                return (int)$value > (int)$parameters;
+            if (!empty($value) || $value == "" || $value == null) {
+                return true;
             } else {
-                if (in_array($parameters, $request)) {
-                    if (is_numeric($request[$parameters])) {
-                        return (int)$value > (int)$request[$parameters];
-                    } else {
-                        throw new Exception("Field {$parameters} not comparable!");
-                    }
+                if (is_numeric($parameters)) {
+                    return (int)$value > (int)$parameters;
                 } else {
-                    throw new Exception("Field {$parameters} didn't exists!");
+                    if (in_array($parameters, $request)) {
+                        if (is_numeric($request[$parameters])) {
+                            return (int)$value > (int)$request[$parameters];
+                        } else {
+                            throw new Exception("Field {$parameters} not comparable!");
+                        }
+                    } else {
+                        throw new Exception("Field {$parameters} didn't exissts!");
+                    }
                 }
             }
         }
