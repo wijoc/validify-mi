@@ -1,6 +1,6 @@
 <?php
 
-namespace ValidifyMI;
+namespace Wijozoe\ValidifyMI;
 
 interface Rule
 {

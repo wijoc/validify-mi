@@ -8,8 +8,8 @@ error_reporting(E_ALL);
 require_once './autoload.php';
 
 // use V;
-// use ValidifyMI\Rule;
-use ValidifyMI\Rules\Validator;
+// use Wijozoe\ValidifyMI\Rule;
+use Wijozoe\ValidifyMI\Rules\Validator;
 
 $data = [
     'name' => 'John Doe',

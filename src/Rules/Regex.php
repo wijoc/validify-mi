@@ -1,8 +1,8 @@
 <?php
 
-namespace ValidifyMI\Rules;
+namespace Wijozoe\ValidifyMI\Rules;
 
-use ValidifyMI\Rule;
+use Wijozoe\ValidifyMI\Rule;
 
 class RegexRule implements Rule
 {
