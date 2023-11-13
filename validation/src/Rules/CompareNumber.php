@@ -1,9 +1,9 @@
 <?php
 
-namespace Validitify\Rules;
+namespace ValidifyMI\Rules;
 
 use Exception;
-use Validitify\RuleWithRequest;
+use ValidifyMI\RuleWithRequest;
 use WP_REST_Request;
 
 class CompareNumberRule implements RuleWithRequest

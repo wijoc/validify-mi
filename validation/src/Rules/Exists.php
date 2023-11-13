@@ -1,8 +1,8 @@
 <?php
 
-namespace Validitify\Rules;
+namespace ValidifyMI\Rules;
 
-use Validitify\Rule;
+use ValidifyMI\Rule;
 
 class ExistsRule implements Rule
 {

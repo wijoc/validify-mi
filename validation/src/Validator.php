@@ -1,21 +1,22 @@
 <?php
 
-namespace Validitify\Rules;
+namespace ValidifyMI\Rules;
 
-use Validitify\Rule;
-use Validitify\Rules\RequiredRule;
-use Validitify\Rules\EmailRule;
-use Validitify\Rules\MinRule;
-use Validitify\Rules\MaxRule;
-use Validitify\Rules\NumericRule;
-use Validitify\Rules\ExistsRule;
-use Validitify\Rules\NotExistsRule;
-use Validitify\Rules\MaxStoredRule;
+use ValidifyMI\Rule;
+use ValidifyMI\Rules\RequiredRule;
+use ValidifyMI\Rules\EmailRule;
+use ValidifyMI\Rules\MinRule;
+use ValidifyMI\Rules\MaxRule;
+use ValidifyMI\Rules\NumericRule;
+use ValidifyMI\Rules\ExistsRule;
+use ValidifyMI\Rules\NotExistsRule;
+use ValidifyMI\Rules\MaxStoredRule;
 use Exception;
 
 class Validator
 {
     private $data;
+    private $sanitized;
     private $rules;
     private $messages;
     private $sanitizer;
@@ -37,34 +38,16 @@ class Validator
     public function validate()
     {
         foreach ($this->rules as $field => $rules) {
-            print('<pre>' . print_r('field "' . $field . '" : ', true) . '</pre>');
-            print('<pre>' . print_r('rule "' . implode(',', $rules) . '" : ', true) . '</pre>');
-
             $fields = [];
             $rawField = $field;
 
             if (strpos($field, '.') !== false) {
                 $field = explode('.', $field);
 
-                // $field = $fields[0];
-                // array_shift($fields);
-
-                // print('<pre>' . print_r('the field  : ' . $field, true) . '</pre>');
-                print('<pre>' . print_r('the fields : ' . implode(', ', $field), true) . '</pre>');
-
                 $value = $this->getValue($rawField, $field);
             } else {
-                print('<pre>' . print_r('the field  : ' . $field, true) . '</pre>');
-                // print('<pre>' . print_r('the fields : -', true) . '</pre>');
-
                 $value = isset($this->data[$field]) ? $this->data[$field] : null;
             }
-
-            print('<pre>' . 'value is ' . print_r(is_array($value) ? 'array' : 'not_array', true) . '</pre>');
-            print('<pre>' . print_r($value ?? '--------------', true) . '</pre><hr>');
-            // print('<pre>' . print_r($this->data, true) . '</pre>');
-
-            // $value = isset($this->data[$field]) ? $this->data[$field] : null;
 
             foreach ($rules as $rule) {
                 list($ruleName, $parameters) = $this->parseRule($rule);
@@ -91,7 +74,6 @@ class Validator
             $keys = [$keys];
         }
 
-        print('<pre>' . print_r(array_key_exists($field, $this->data) ? 'zzzzzzzzzz' : $field, true) . '</pre>');
         if (!array_key_exists($field, $this->data)) {
             return null;
         } else {
@@ -99,10 +81,8 @@ class Validator
             $values = [];
 
             $fromArray = $keys[0] == '*' ? true : false;
-            print('<pre>' . print_r($fromArray, true) . '</pre>');
 
             for ($i = 0; $i < count($keys); $i++) {
-                // print('<pre>' . print_r($keys[$i], true) . '</pre>');
                 if ($keys[$i] == '*') {
                     if ($fromArray) {
                         if (!is_array($datas)) {
@@ -125,7 +105,6 @@ class Validator
                             } else {
                                 $values[] = $data;
                             }
-                            // $values[] = $data;
                         }
                         $datas = $data ?? NULL;
                     } else {
@@ -270,125 +249,93 @@ class Validator
         return $this->data;
     }
 
-    // public function sanitize($sanitize = false)
-    // {
-    //     /** Old sanitize start here */
-    //     foreach ($this->data as $key => $value) {
-    //         if (!isset($this->rules[$key])) {
-    //             if (!isset($this->rules[$key . ".*"])) {
-    //                 unset($this->data[$key]);
-    //                 continue;
-    //             }
-    //         }
+    public function sanitize()
+    {
+        /** Changed Sanitize start here */
+        if (!empty($this->sanitizer)) {
+            foreach ($this->sanitizer as $field => $rule) {
+                if (is_string($rule) && $rule !== null && !empty($rule)) {
+                    if (strpos($field, '.*') !== false) {
+                        $theField = explode('.*', $field)[0];
 
-    //         if (is_array($value) || is_object($value) || file_exists($value)) {
-    //             // $sanitizeName = $sanitize[$key];
-    //             // switch ($sanitizeName) :
-    //             //     case "array" :
+                        if (array_key_exists($theField, $this->data)) {
+                            $this->sanitized[$theField] = $this->sanitizeArray($rule, $this->data[$theField]);
+                            // $this->data[$theField][] = $this->doSanitize($rule, $this->data[$theField]);
+                        } else {
+                            $this->sanitized[$theField] = null;
+                        }
+                    } else {
+                        if (array_key_exists($field, $this->data)) {
+                            $this->sanitized[$field] = $this->doSanitize($rule, $this->data[$field]);
+                        } else {
+                            $this->sanitized[$field] = null;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-    //             //     case "arrayofobject" :
-    //             //         default break;
-    //         } else if (in_array("wywsig", $this->rules[$key])) {
-    //             $this->data[$key] = wp_kses_post($value);
-    //         } else {
-    //             $this->data[$key] = sanitize_text_field($value);
-    //         }
-    //     }
-    // }
+    private function sanitizeArray(String $rule, mixed $data)
+    {
+        if (is_array($data)) {
+            foreach ($data as $key => $value) {
+                if (is_array($value)) {
+                    $data[$key] = $this->sanitizeArray($rule, $value);
+                } else {
+                    $data[$key] = $this->doSanitize($rule, $value);
+                }
+            }
+        }
 
-    // /** Temporary validation only for setup company */
-    // public function tempValidate()
-    // {
-    //     foreach ($this->rules as $field => $rules) {
-    //         /** Set rule real field */
-    //         if (strpos($field, '.*') !== false) {
-    //             $theField = substr($field, 0, -2);
-    //             $value = isset($this->data[$theField]) ? $this->data[$theField] : null;
-    //             if (!is_array($value) && $value !== null) {
-    //                 $value = explode(',', $value);
-    //             }
-    //         } else {
-    //             $value = isset($this->data[$field]) ? $this->data[$field] : null;
-    //         }
+        return $data;
+    }
 
+    private function doSanitize(String $rule, Mixed $data, String $parameter = '')
+    {
+        switch ($rule):
+            case 'email':
+                if (function_exists('sanitize_text_field')) {
+                    return sanitize_text_field($data);
+                } else {
+                    throw new Exception('Only work on wordpress!');
+                }
+                break;
+            case 'textarea':
+                if (function_exists('sanitize_textarea_field')) {
+                    return sanitize_textarea_field($data);
+                } else {
+                    throw new Exception('Only work on wordpress!');
+                }
 
-    //         foreach ($rules as $rule) {
-    //             list($ruleName, $parameters) = $this->parseRule($rule);
-    //             $ruleInstance = $this->getRuleInstance($ruleName);
+                break;
+            case 'text':
+                if (function_exists('sanitize_text_field')) {
+                    return sanitize_text_field($data);
+                } else {
+                    throw new Exception('Only work on wordpress!');
+                }
 
-    //             if (!$ruleInstance->validate($field, $value, $parameters)) {
-    //                 $this->addError($field, $ruleName, $parameters);
-    //             }
-    //         }
-    //     }
+                break;
+            case 'kses':
+                if (function_exists('wp_kses')) {
+                    return wp_kses($data, []);
+                } else {
+                    throw new Exception('Only work on wordpress!');
+                }
 
-    //     return empty($this->errors);
-    // }
+                break;
+            case 'ksespost':
+                if (function_exists('wp_kses_post')) {
+                    return wp_kses_post($data);
+                } else {
+                    throw new Exception('Only work on wordpress!');
+                }
 
-    // /** Temporary sanitize only for setup company */
-    // public function tempSanitize()
-    // {
-    //     /** Changed Sanitize start here */
-    //     if (!empty($this->_sanitizeRules)) {
-    //         foreach ($this->_sanitizeRules as $field => $rule) {
-    //             if (is_string($rule) && $rule !== null && !empty($rule)) {
-    //                 if (strpos($field, '.*') !== false) {
-    //                     $theField = explode('.*', $field)[0];
-
-    //                     if (array_key_exists($theField, $this->data)) {
-    //                         $this->data[$theField] = $this->_sanitizeArray($rule, $this->data[$theField]);
-    //                         // $this->data[$theField][] = $this->_doSanitize($rule, $this->data[$theField]);
-    //                     } else {
-    //                         $this->data[$theField] = null;
-    //                     }
-    //                 } else {
-    //                     if (array_key_exists($field, $this->data)) {
-    //                         $this->data[$field] = $this->_doSanitize($rule, $this->data[$field]);
-    //                     } else {
-    //                         $this->data[$field] = null;
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
-    // private function _sanitizeArray(String $rule, mixed $data)
-    // {
-    //     if (is_array($data)) {
-    //         foreach ($data as $key => $value) {
-    //             if (is_array($value)) {
-    //                 $data[$key] = $this->_sanitizeArray($rule, $value);
-    //             } else {
-    //                 $data[$key] = $this->_doSanitize($rule, $value);
-    //             }
-    //         }
-    //     }
-
-    //     return $data;
-    // }
-
-    // private function _doSanitize(String $rule, Mixed $data, String $parameter = '')
-    // {
-    //     switch ($rule):
-    //         case 'email':
-    //             return sanitize_text_field($data);
-    //             break;
-    //         case 'textarea':
-    //             return sanitize_textarea_field($data);
-    //             break;
-    //         case 'text':
-    //             return sanitize_text_field($data);
-    //             break;
-    //         case 'kses':
-    //             return wp_kses($data, []);
-    //             break;
-    //         case 'ksespost':
-    //             return wp_kses_post($data);
-    //             break;
-    //         default:
-    //             return $data;
-    //             break;
-    //     endswitch;
-    // }
+                break;
+            default:
+                return $data;
+                break;
+        endswitch;
+    }
 }
