@@ -2,9 +2,7 @@
   "name": "zvalidate/sdk",
   "description": "SDK for ZValidate",
   "require": {
-      "php": "^8.0",
-    "somnambulist/validation": "^1.8",
-    "rakit/validation": "^1.4"
+      "php": "^8.0"
   },
   "autoload": {
       "psr-4": {
