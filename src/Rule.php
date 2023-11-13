@@ -1,6 +1,6 @@
 <?php
 
-namespace V;
+namespace ValidifyMI;
 
 interface Rule
 {
