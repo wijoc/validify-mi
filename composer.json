@@ -6,7 +6,7 @@
   },
   "autoload": {
     "psr-4": {
-      "ValidifyMISDK\\": "src/"
+      "ValidifyMISDK\\": "src"
     }
   },
   "license": "MIT"
