@@ -1,12 +1,12 @@
 {
-  "name": "validify-mi/sdk",
+  "name": "wijozoe/validify-mi",
   "description": "SDK for validify-mi",
   "require": {
     "php": "^8.0"
   },
   "autoload": {
     "psr-4": {
-      "ValidifyMISDK\\": "src"
+      "Wijozoe\\ValidifyMI": "src"
     }
   },
   "license": "MIT"
