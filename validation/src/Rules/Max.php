@@ -1,8 +1,8 @@
 <?php
 
-namespace V\Rules;
+namespace ValidifyMI\Rules;
 
-use V\Rule;
+use ValidifyMI\Rule;
 
 class MaxRule implements Rule
 {
