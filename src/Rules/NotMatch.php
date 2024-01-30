@@ -1,9 +1,9 @@
 <?php
 
-namespace Wijozoe\ValidifyMI\Rules;
+namespace Wijoc\ValidifyMI\Rules;
 
 use Exception;
-use Wijozoe\ValidifyMI\RuleWithRequest;
+use Wijoc\ValidifyMI\RuleWithRequest;
 use WP_REST_Request;
 
 class NotMatchRule implements RuleWithRequest
@@ -52,4 +52,5 @@ class NotMatchRule implements RuleWithRequest
     {
         $parameters = is_array($parameters) ? $parameters[0] : $parameters;
         return "The {$field} should be different from field {$parameters}.";
+    }
 }

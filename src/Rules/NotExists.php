@@ -1,8 +1,8 @@
 <?php
 
-namespace Wijozoe\ValidifyMI\Rules;
+namespace Wijoc\ValidifyMI\Rules;
 
-use Wijozoe\ValidifyMI\Rule;
+use Wijoc\ValidifyMI\Rule;
 
 class NotExistsRule implements Rule
 {

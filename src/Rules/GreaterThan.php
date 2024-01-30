@@ -1,9 +1,9 @@
 <?php
 
-namespace Wijozoe\ValidifyMI\Rules;
+namespace Wijoc\ValidifyMI\Rules;
 
 use Exception;
-use Wijozoe\ValidifyMI\RuleWithRequest;
+use Wijoc\ValidifyMI\RuleWithRequest;
 use WP_REST_Request;
 
 class GreaterThanRule implements RuleWithRequest

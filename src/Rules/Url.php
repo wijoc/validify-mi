@@ -1,8 +1,8 @@
 <?php
 
-namespace Wijozoe\ValidifyMI\Rules;
+namespace Wijoc\ValidifyMI\Rules;
 
-use Wijozoe\ValidifyMI\Rule;
+use Wijoc\ValidifyMI\Rule;
 
 class UrlRule implements Rule
 {
@@ -17,7 +17,6 @@ class UrlRule implements Rule
 
     public function getErrorMessage($field, $parameters): string
     {
-        // return "The {$field} must be a valid url.";
-        return "Het veld {$field} moet een geldige URL zijn.";
+        return "The {$field} must be a valid url.";
     }
 }

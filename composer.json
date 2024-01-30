@@ -1,13 +1,21 @@
 {
-  "name": "wijozoe/validify-mi",
-  "description": "SDK for validify-mi",
-  "require": {
-    "php": "^8.0"
-  },
+  "name": "wijoc/validify-mi",
+  "description": "A stand alone validation for PHP and Wordpress.",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+      {
+          "name": "Joshua Wicaksono",
+          "email": "wicaksonojoshua@gmail.com"
+      }
+  ],
+  "minimum-stability": "dev",
+  "require": {},
   "autoload": {
-    "psr-4": {
-      "Wijozoe\\Wijozoe\ValidifyMI\\": "src"
-    }
+      "psr-4": {
+          "Wijoc\\ValidifyMI\\": "src/"
+      }
   },
-  "license": "MIT"
+  "require-dev": {
+  }
 }

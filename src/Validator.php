@@ -1,16 +1,29 @@
 <?php
 
-namespace Wijozoe\ValidifyMI\Rules;
+namespace Wijoc\ValidifyMI;
 
-use Wijozoe\ValidifyMI\Rule;
-use Wijozoe\ValidifyMI\Rules\RequiredRule;
-use Wijozoe\ValidifyMI\Rules\EmailRule;
-use Wijozoe\ValidifyMI\Rules\MinRule;
-use Wijozoe\ValidifyMI\Rules\MaxRule;
-use Wijozoe\ValidifyMI\Rules\NumericRule;
-use Wijozoe\ValidifyMI\Rules\ExistsRule;
-use Wijozoe\ValidifyMI\Rules\NotExistsRule;
-use Wijozoe\ValidifyMI\Rules\MaxStoredRule;
+use Wijoc\ValidifyMI\Rule;
+use Wijoc\ValidifyMI\Rules\RequiredRule;
+use Wijoc\ValidifyMI\Rules\EmailRule;
+use Wijoc\ValidifyMI\Rules\MinRule;
+use Wijoc\ValidifyMI\Rules\MaxRule;
+use Wijoc\ValidifyMI\Rules\NumericRule;
+use Wijoc\ValidifyMI\Rules\ExistsRule;
+use Wijoc\ValidifyMI\Rules\NotExistsRule;
+use Wijoc\ValidifyMI\Rules\MaxStoredRule;
+use Wijoc\ValidifyMI\Rules\MatchRule;
+use Wijoc\ValidifyMI\Rules\NotMatchRule;
+use Wijoc\ValidifyMI\Rules\CompareNumberRule;
+use Wijoc\ValidifyMI\Rules\FileMaxSizeRule;
+use Wijoc\ValidifyMI\Rules\FilesRule;
+use Wijoc\ValidifyMI\Rules\GreaterThanRule;
+use Wijoc\ValidifyMI\Rules\InRule;
+use Wijoc\ValidifyMI\Rules\MimeRule;
+use Wijoc\ValidifyMI\Rules\RegexRule;
+use Wijoc\ValidifyMI\Rules\UrlRule;
+use Wijoc\ValidifyMI\Rules\DateRule; // Rule still not working.
+use Wijoc\ValidifyMI\Rules\DateMoreThanRule; // Rule still not working.
+
 use Exception;
 
 class Validator
@@ -24,15 +37,21 @@ class Validator
     private $ignored_rules;
     private $with_request_rules;
 
-    public function __construct(array $data, array $rules, array $messages = [], array $sanitizer = [])
+    public function __construct(array $data = [], array $rules = [], array $messages = [], array $sanitizer = [])
     {
         $this->data = $data;
+        $this->sanitized = [];
         $this->rules = $rules;
         $this->messages = $messages;
         $this->sanitizer = $sanitizer;
         $this->errors = [];
         $this->ignored_rules = ['explode'];
-        $this->with_request_rules = ['date'];
+        $this->with_request_rules = ['date', 'match', 'not_match', 'compare_number', 'greater_than', 'date_more_than'];
+    }
+
+    public static function make(array $data, array $rules, array $messages = [], array $sanitizer = [])
+    {
+        return new self($data, $rules, $messages, $sanitizer);
     }
 
     public function validate()
@@ -54,7 +73,13 @@ class Validator
                 if (!in_array($ruleName, $this->ignored_rules)) {
                     $ruleInstance = $this->getRuleInstance($ruleName);
 
-                    if (!$ruleInstance->validate($field, $value, $parameters)) {
+                    if (in_array($ruleName, $this->with_request_rules)) {
+                        $ruleValidate = $ruleInstance->validate($field, $value, $this->data, $parameters);
+                    } else {
+                        $ruleValidate = $ruleInstance->validate($field, $value, $parameters);
+                    }
+
+                    if (!$ruleValidate) {
                         $this->addError($rawField, $ruleName, $parameters);
                     }
                 }
@@ -80,7 +105,11 @@ class Validator
             $datas = $this->data[$field];
             $values = [];
 
-            $fromArray = $keys[0] == '*' ? true : false;
+            if (array_is_list($datas)) {
+                $fromArray = $keys[0] == '*' ? false : true;
+            } else {
+                $fromArray = $keys[0] == '*' ? true : false;
+            }
 
             for ($i = 0; $i < count($keys); $i++) {
                 if ($keys[$i] == '*') {
@@ -162,7 +191,11 @@ class Validator
         $parameters = [];
         if (strpos($rule, ':') !== false) {
             list($rule, $parameterString) = explode(':', $rule, 2);
-            $parameters = explode(',', strtolower($parameterString));
+            if (in_array($rule, $this->with_request_rules)) {
+                $parameters = explode(',', $parameterString);
+            } else {
+                $parameters = explode(',', strtolower($parameterString));
+            }
         }
 
         return [$rule, $parameters];
@@ -182,7 +215,7 @@ class Validator
             case 'numeric':
                 return new NumericRule();
             case 'in':
-                return new In();
+                return new InRule();
             case 'url':
                 return new UrlRule();
             case 'exists':
@@ -197,6 +230,26 @@ class Validator
                 return new MimeRule();
             case 'max_file_size':
                 return new FileMaxSizeRule();
+            case 'match':
+                return new MatchRule();
+            case 'not_match':
+                return new NotMatchRule();
+            case 'compare_number':
+                return new CompareNumberRule();
+            case 'greater_than':
+                return new GreaterThanRule();
+            case 'is_files':
+            case 'file':
+            case 'files':
+                return new FilesRule();
+            case 'regex':
+                return new RegexRule();
+                // case 'must_be':
+                //     return new MustBeRule();
+            case 'date':
+                return new DateRule();
+            case 'date_more_than':
+                return new DateMoreThanRule();
             default:
                 throw new Exception("Rule '{$ruleName}' not supported.");
         }
@@ -204,8 +257,16 @@ class Validator
 
     private function addError($field, $rule, $parameters)
     {
-        if ($this->messages && array_key_exists($field, $this->messages)) {
-            $this->errors[$field][] = $this->messages[$field];
+        if ($this->messages && is_array($this->messages)) {
+            if (array_key_exists($field . '.' . $rule, $this->messages)) {
+                $this->errors[$field][] = $this->messages[$field . '.' . $rule];
+            } else if ($this->messages && is_array($this->messages)) {
+                if (array_key_exists($field, $this->messages)) {
+                    if (array_key_exists($rule, $this->messages[$field])) {
+                        $this->errors[$field][] = $this->messages[$field][$rule];
+                    }
+                }
+            }
         } else {
             $fields = explode('.', $field);
             $message = $this->messages;
@@ -239,14 +300,42 @@ class Validator
         return $ruleInstance->getErrorMessage($field, $parameters);
     }
 
-    public function getErrors()
+    public function errors($return = null)
     {
-        return $this->errors;
+        if ($return == 'all') {
+            return $this->errors;
+        } else {
+            return $this;
+        }
+    }
+
+    public function firstOfAll(): mixed
+    {
+        if ($this->errors && is_array($this->errors) && !empty($this->errors)) {
+            $firstKey = array_key_first($this->errors);
+
+            if ($this->errors[$firstKey]) {
+                if (is_array($this->errors[$firstKey])) {
+                    return $this->errors[$firstKey][0];
+                } else {
+                    return $this->errors[$firstKey];
+                }
+            } else {
+                return null;
+            }
+        } else {
+            return null;
+        }
     }
 
     public function validated()
     {
         return $this->data;
+    }
+
+    public function sanitized()
+    {
+        return $this->sanitized;
     }
 
     public function sanitize()
@@ -255,8 +344,8 @@ class Validator
         if (!empty($this->sanitizer)) {
             foreach ($this->sanitizer as $field => $rule) {
                 if (is_string($rule) && $rule !== null && !empty($rule)) {
-                    if (strpos($field, '.*') !== false) {
-                        $theField = explode('.*', $field)[0];
+                    if (strpos($field, '.') !== false) {
+                        $theField = explode('.', $field)[0];
 
                         if (array_key_exists($theField, $this->data)) {
                             $this->sanitized[$theField] = $this->sanitizeArray($rule, $this->data[$theField]);
@@ -269,6 +358,17 @@ class Validator
                             $this->sanitized[$field] = $this->doSanitize($rule, $this->data[$field]);
                         } else {
                             $this->sanitized[$field] = null;
+                        }
+                    }
+                } else {
+                    if (strpos($field, '.') !== false) {
+                        $theField = explode('.', $field)[0];
+                        if (array_key_exists($theField, $this->data)) {
+                            $this->sanitized[$theField] = $this->data[$theField];
+                        }
+                    } else {
+                        if (array_key_exists($field, $this->data)) {
+                            $this->sanitized[$field] = $this->data[$field];
                         }
                     }
                 }
@@ -295,8 +395,8 @@ class Validator
     {
         switch ($rule):
             case 'email':
-                if (function_exists('sanitize_text_field')) {
-                    return sanitize_text_field($data);
+                if (function_exists('sanitize_email')) {
+                    return sanitize_email($data);
                 } else {
                     throw new Exception('Only work on wordpress!');
                 }
