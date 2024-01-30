@@ -1,8 +1,8 @@
 <?php
 
-namespace ValidifyMI\Rules;
+namespace Wijoc\ValidifyMI\Rules;
 
-use ValidifyMI\Rule;
+use Wijoc\ValidifyMI\Rule;
 
 class FileMaxSizeRule implements Rule
 {
@@ -17,12 +17,14 @@ class FileMaxSizeRule implements Rule
             if (strpos($field, '.*') !== false) {
                 $checkValue = [];
                 foreach ($value as $key => $values) {
-                    $checkValue[$key] = $_FILES[$theField][$key]['size'] <= $parameters[0];
+                    /** Size come as byte, then need to change size to KB */
+                    $checkValue[$key] = ($_FILES[$theField][$key]['size'] / 1000) <= $parameters[0];
                 }
 
                 return in_array(false, $checkValue) ? false : true;
             } else {
-                return (int)$_FILES[$theField]['size'] <= (int)$parameters[0];
+                /** Size come as byte, then need to change size to KB */
+                return ((int)$_FILES[$theField]['size'] / 1000) <= (int)$parameters[0];
             }
         }
     }
@@ -32,8 +34,8 @@ class FileMaxSizeRule implements Rule
         if (strpos($field, '.*') !== false) {
             return "One of the '" . substr($field, 0, -2) . "' value didn't exists.";
         } else {
-            // return "The {$field} didn't exists.";
-            return "Bestandsgrootte overschreden, toegestane grootte " . ($parameters[0] / 1024000) . "MB";
+            /** Size come as byte, then need to change size to KB */
+            return "File size exceeded, allowed size : " . ($parameters[0] / 1000) . "MB";
         }
     }
 }

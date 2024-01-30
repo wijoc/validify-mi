@@ -1,8 +1,8 @@
 <?php
 
-namespace ValidifyMI\Rules;
+namespace Wijoc\ValidifyMI\Rules;
 
-use ValidifyMI\Rule;
+use Wijoc\ValidifyMI\Rule;
 
 class EmailRule implements Rule
 {

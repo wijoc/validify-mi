@@ -1,8 +1,8 @@
 <?php
 
-namespace ValidifyMI\Rules;
+namespace Wijoc\ValidifyMI\Rules;
 
-use ValidifyMI\Rule;
+use Wijoc\ValidifyMI\Rule;
 
 class MaxStoredRule implements Rule
 {
@@ -47,10 +47,6 @@ class MaxStoredRule implements Rule
                 switch ($type) {
                     case 'meta':
                         $databaseValue = maybe_unserialize(get_user_meta($selector, $column, true));
-
-                        print('<pre>' . print_r($databaseValue, true) . '</pre>');
-                        // print('<pre>' . print_r(count($databaseValue), true) . '</pre>');
-                        print('<pre>' . print_r($value, true) . '</pre>');
 
                         if (is_array($databaseValue)) {
                             if (count($databaseValue) + intval($value) <= $limit) {

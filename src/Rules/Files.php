@@ -1,19 +1,18 @@
 <?php
 
-namespace ValidifyMI\Rules;
+namespace Wijoc\ValidifyMI\Rules;
 
-use ValidifyMI\Rule;
+use Wijoc\ValidifyMI\Rule;
 
-class FileRule implements Rule
+class FilesRule implements Rule
 {
     public function validate($field, $value, $parameters): bool
     {
-        return true;
+        return isset($_FILES[$field]);
     }
 
     public function getErrorMessage($field, $parameters): string
     {
-        // return "File type not allowed.";
-        return "Bestandstype niet toegestaan.";
+        return "Input must be file(s).";
     }
 }

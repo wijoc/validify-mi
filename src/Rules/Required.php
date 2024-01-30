@@ -1,8 +1,8 @@
 <?php
 
-namespace ValidifyMI\Rules;
+namespace Wijoc\ValidifyMI\Rules;
 
-use ValidifyMI\Rule;
+use Wijoc\ValidifyMI\Rule;
 
 class RequiredRule implements Rule
 {
@@ -28,25 +28,6 @@ class RequiredRule implements Rule
         } else {
             return !empty($value);
         }
-
-        // if (!empty($value)) {
-        //     if (is_array($value)) {
-        //         if (count($value) > 1) {
-        //             $checkValue = [];
-        //             foreach ($value as $val) {
-        //                 $checkValue[] = !empty($val);
-        //             }
-
-        //             return in_array(false, $checkValue) ? false : true;
-        //         }
-
-        //         return !empty($value);
-        //     } else {
-        //         return false;
-        //     }
-        // }
-
-        // return !empty($value);
     }
 
     public function getErrorMessage($field, $parameters): string

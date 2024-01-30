@@ -1,8 +1,8 @@
 <?php
 
-namespace ValidifyMI\Rules;
+namespace Wijoc\ValidifyMI\Rules;
 
-use ValidifyMI\Rule;
+use Wijoc\ValidifyMI\Rule;
 
 class ExistsRule implements Rule
 {
@@ -36,14 +36,18 @@ class ExistsRule implements Rule
             case 'user':
                 switch ($type) {
                     case 'meta':
-                        return true;
+                        $databaseValue = get_users([
+                            'meta_key'      => $column,
+                            'meta_value'    => $value
+                        ]);
+                        return count($databaseValue) > 0;
                         break;
                     case 'acf':
                         return true;
                         break;
                     default:
-                        return true;
-                        // $dbValue = get_user()
+                        $databaseValue = get_user_by($column, $value);
+                        return $databaseValue ? true : false;
                 }
                 break;
             case 'post':
