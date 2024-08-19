@@ -6,9 +6,17 @@ use Wijoc\ValidifyMI\Rule;
 
 class NumericRule implements Rule
 {
+    /**
+     * Validating Function
+     *
+     * @param Mixed $field
+     * @param Mixed $value
+     * @param Mixed $parameters
+     * @return boolean
+     */
     public function validate($field, $value, $parameters): bool
     {
-        if ($value === "" || $value === null) {
+        if ($value == '' || $value == null || empty($value)) {
             return true;
         }
 
@@ -20,17 +28,27 @@ class NumericRule implements Rule
                         break;
                     }
                 }
-
-                return true;
             }
+            
             return is_numeric($value);
         } else {
             return is_numeric($value);
         }
     }
 
+    /**
+     * Get error message Function
+     *
+     * @param Mixed $field
+     * @param Mixed $parameters
+     * @return string
+     */
     public function getErrorMessage($field, $parameters): string
     {
-        return "The {$field} value must be a number.";
+        if (strpos($field, '.*') !== false) {
+            return "One of the '" . substr($field, 0, -2) . "' value is non-numeric.";
+        } else {
+            return "The {$field} is non-numeric.";
+        }
     }
 }

@@ -6,7 +6,7 @@ use Wijoc\ValidifyMI\RuleWithRequest;
 use DateTimeImmutable;
 use Exception;
 
-class DateMoreThanRule extends DateRule implements RuleWithRequest
+class DateLessThanRule extends DateRule implements RuleWithRequest
 {
     /**
      * Validatin Function
@@ -35,7 +35,7 @@ class DateMoreThanRule extends DateRule implements RuleWithRequest
     
                     foreach($value as $key => $val) {
                         $valueDate  = DateTimeImmutable::createFromFormat($parameters[2], $val);
-                        $checkValue[$key] = $valueDate->getTimestamp() > $parameters->getTimestamp();
+                        $checkValue[$key] = $valueDate->getTimestamp() < $parameters->getTimestamp();
                     }
     
                     return in_array(false, $checkValue) ? false : true;
@@ -44,7 +44,7 @@ class DateMoreThanRule extends DateRule implements RuleWithRequest
 
             $valueDate  = DateTimeImmutable::createFromFormat($parameters[2], $value);
 
-            return $valueDate->getTimestamp() > $parameters->getTimestamp();
+            return $valueDate->getTimestamp() < $parameters->getTimestamp();
         } else {
             if (in_array($parameters[0], $request)) {
                 /** check if field contain date or not */
@@ -57,7 +57,7 @@ class DateMoreThanRule extends DateRule implements RuleWithRequest
             
                             foreach($value as $key => $val) {
                                 $valueDate  = DateTimeImmutable::createFromFormat($parameters[2], $val);
-                                $checkValue[$key] = $valueDate->getTimestamp() > $dateParameters->getTimestamp();
+                                $checkValue[$key] = $valueDate->getTimestamp() < $dateParameters->getTimestamp();
                             }
             
                             return in_array(false, $checkValue) ? false : true;
@@ -66,7 +66,7 @@ class DateMoreThanRule extends DateRule implements RuleWithRequest
 
                     $valueDate  = DateTimeImmutable::createFromFormat($parameters[2], $value);
 
-                    return $valueDate->getTimestamp() > $dateParameters->getTimestamp();
+                    return $valueDate->getTimestamp() < $dateParameters->getTimestamp();
                 } else {
                     throw new Exception("Field {$parameters[0]} not comparable!");
                 }
