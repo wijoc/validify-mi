@@ -4,7 +4,7 @@ namespace Wijoc\ValidifyMI\Rules;
 
 use Wijoc\ValidifyMI\Rule;
 
-class NumericRule implements Rule
+class NumericRule extends Rule
 {
     /**
      * Validating Function

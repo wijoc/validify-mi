@@ -5,7 +5,7 @@ namespace Wijoc\ValidifyMI\Rules;
 use Wijoc\ValidifyMI\RuleWithRequest;
 use Exception;
 
-class CompareNumberRule implements RuleWithRequest
+class CompareNumberRule extends RuleWithRequest
 {
     /**
      * Validatin Function

@@ -4,7 +4,7 @@ namespace Wijoc\ValidifyMI\Rules;
 
 use Wijoc\ValidifyMI\Rule;
 
-class MinRule implements Rule
+class MinRule extends Rule
 {
     /**
      * Validating Function

@@ -4,7 +4,7 @@ namespace Wijoc\ValidifyMI\Rules;
 
 use Wijoc\ValidifyMI\Rule;
 
-class UrlRule implements Rule
+class UrlRule extends Rule
 {
     public function validate($field, $value, $parameters): bool
     {

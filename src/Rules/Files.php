@@ -4,7 +4,7 @@ namespace Wijoc\ValidifyMI\Rules;
 
 use Wijoc\ValidifyMI\RuleWithRequest;
 
-class FilesRule implements RuleWithRequest
+class FilesRule extends RuleWithRequest
 {
     /**
      * Validating Function

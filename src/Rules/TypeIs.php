@@ -5,7 +5,7 @@ namespace Wijoc\ValidifyMI\Rules;
 use Wijoc\ValidifyMI\Rule;
 use Exception;
 
-class TypeIs implements Rule
+class TypeIs extends Rule
 {
     public function validate($field, $value, $parameters): bool
     {

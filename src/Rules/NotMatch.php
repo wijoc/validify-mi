@@ -5,7 +5,7 @@ namespace Wijoc\ValidifyMI\Rules;
 use Wijoc\ValidifyMI\RuleWithRequest;
 use Exception;
 
-class NotMatchRule implements RuleWithRequest
+class NotMatchRule extends RuleWithRequest
 {
     /**
      * Validating Function
@@ -45,7 +45,7 @@ class NotMatchRule implements RuleWithRequest
                 throw new Exception("Field {$parameters} didn't exists!");
             }
         } else {
-            throw new Exception("{$parameters} not provided!");
+            throw new Exception("parameters not provided!");
         }
     }
 

@@ -4,7 +4,7 @@ namespace Wijoc\ValidifyMI\Rules;
 
 use Wijoc\ValidifyMI\Rule;
 
-class RequiredRule implements Rule
+class RequiredRule extends Rule
 {
     /**
      * Validating Function
@@ -23,16 +23,28 @@ class RequiredRule implements Rule
         if (is_array($field)) {
             if (is_array($values)) {
                 foreach ($values as $value) {
-                    if (empty($value)) { return false; }
+                    if (is_string($value)) {
+                        if (empty(trim($value))) { return false; }
+                    } else {
+                        if (empty($value)) { return false; }
+                    }
                 }
                 
+                return !empty($values);
+            } else if (is_string($values)) {
+                return !empty(trim($values));
+            } else {
                 return !empty($values);
             }
 
             return !empty($values);
         }
 
-        return !empty($values);
+        if (is_string($values)) {
+            return !empty(trim($values));
+        } else {
+            return !empty($values);
+        }
     }
 
     /**

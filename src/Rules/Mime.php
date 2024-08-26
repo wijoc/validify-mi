@@ -4,7 +4,7 @@ namespace Wijoc\ValidifyMI\Rules;
 
 use Wijoc\ValidifyMI\Rule;
 
-class MimeRule implements Rule
+class MimeRule extends Rule
 {
     public function validate($field, $value, $parameters): bool
     {

@@ -5,7 +5,7 @@ namespace Wijoc\ValidifyMI\Rules;
 use Wijoc\ValidifyMI\Rule;
 use Exception;
 
-class ExistsRule extends Rule
+class NotExistsRule extends Rule
 {
     /**
      * Validating Function
@@ -87,7 +87,7 @@ class ExistsRule extends Rule
             
         $databaseValue->limit(1, 0)->get();
         
-        return count($databaseValue) < 1 ? true : false;
+        return count($databaseValue) > 0 ? true : false;
     }
 
     /**

@@ -4,7 +4,7 @@ namespace Wijoc\ValidifyMI\Rules;
 
 use Wijoc\ValidifyMI\Rule;
 
-class MaxRule implements Rule
+class MaxRule extends Rule
 {
     /**
      * Validating Function

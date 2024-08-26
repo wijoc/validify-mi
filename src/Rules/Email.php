@@ -4,7 +4,7 @@ namespace Wijoc\ValidifyMI\Rules;
 
 use Wijoc\ValidifyMI\Rule;
 
-class EmailRule implements Rule
+class EmailRule extends Rule
 {
     /**
      * Validating Function

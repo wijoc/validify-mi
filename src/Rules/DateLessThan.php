@@ -6,7 +6,7 @@ use Wijoc\ValidifyMI\RuleWithRequest;
 use DateTimeImmutable;
 use Exception;
 
-class DateLessThanRule extends DateRule implements RuleWithRequest
+class DateLessThanRule extends DateRule extends RuleWithRequest
 {
     /**
      * Validatin Function

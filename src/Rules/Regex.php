@@ -4,7 +4,7 @@ namespace Wijoc\ValidifyMI\Rules;
 
 use Wijoc\ValidifyMI\Rule;
 
-class RegexRule implements Rule
+class RegexRule extends Rule
 {
     /**
      * Validating Function

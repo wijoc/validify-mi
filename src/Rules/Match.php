@@ -5,7 +5,7 @@ namespace Wijoc\ValidifyMI\Rules;
 use Wijoc\ValidifyMI\RuleWithRequest;
 use Exception;
 
-class MatchRule implements RuleWithRequest
+class MatchRule extends RuleWithRequest
 {
     /**
      * Validating Function

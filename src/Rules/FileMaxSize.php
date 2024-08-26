@@ -4,7 +4,7 @@ namespace Wijoc\ValidifyMI\Rules;
 
 use Wijoc\ValidifyMI\RuleWithRequest;
 
-class FileMaxSizeRule implements RuleWithRequest
+class FileMaxSizeRule extends RuleWithRequest
 {
     /**
      * Validating Function
