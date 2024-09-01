@@ -2,6 +2,8 @@
 
 namespace Wijoc\ValidifyMI;
 
+use Exception;
+
 /**
  * Abstract Class Rule
  */
@@ -17,11 +19,14 @@ abstract class Rule {
             $this->wpdb;
         }
         
-        $host = $_ENV['HOST'] ? $_ENV['HOST'] : (defined('CONNECTION_HOST') ? CONNECTION_HOST : '');
-        $username = $_ENV['USERNAME'] ? $_ENV['USERNAME'] : (defined('CONNECTION_USERNAME') ? CONNECTION_USERNAME : '');
-        $password = $_ENV['PASSWORD'] ? $_ENV['PASSWORD'] : (defined('CONNECTION_PASSWORD') ? CONNECTION_PASSWORD : '');
-        $database = $_ENV['DATABASE'] ? $_ENV['DATABASE'] : (defined('CONNECTION_DATABASE') ? CONNECTION_DATABASE : '');
-        $this->query    = new \Wijoc\QueryBuilder($host, $username, $password, $database);
+        $host = isset($_ENV['CONNECTION_HOST']) ? $_ENV['CONNECTION_HOST'] : (defined('CONNECTION_HOST') ? CONNECTION_HOST : '');
+        $username = isset($_ENV['CONNECTION_USERNAME']) ? $_ENV['CONNECTION_USERNAME'] : (defined('CONNECTION_USERNAME') ? CONNECTION_USERNAME : '');
+        $password = isset($_ENV['CONNECTION_PASSWORD']) ? $_ENV['CONNECTION_PASSWORD'] : (defined('CONNECTION_PASSWORD') ? CONNECTION_PASSWORD : '');
+        $database = isset($_ENV['CONNECTION_DATABASE']) ? $_ENV['CONNECTION_DATABASE'] : (defined('CONNECTION_DATABASE') ? CONNECTION_DATABASE : '');
+
+        if (isset($host) && !empty($host) && isset($username) && !empty($username) && isset($password) && !empty($password) && isset($database) && !empty($database)) {
+            $this->query    = new \Wijoc\QueryBuilder($host, $username, $password, $database);
+        }
     }
 
     abstract public function validate($field, $value, $parameters): bool;

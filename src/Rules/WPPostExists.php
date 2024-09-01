@@ -29,8 +29,6 @@ class WPPostExistsRule extends Rule
             throw new Exception("only available for wordpress project!");
         }
 
-        if ($this->)
-
         $params = explode('/', $parameters[0]);
         $postType = $params[0];
         $status = $params[1];
