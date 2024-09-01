@@ -3,70 +3,108 @@
 namespace Wijoc\ValidifyMI\Rules;
 
 use Wijoc\ValidifyMI\Rule;
+use Exception;
 
-class NotExistsRule implements Rule
+class NotExistsRule extends Rule
 {
+    /**
+     * Validating Function
+     *
+     * @param Mixed $field
+     * @param Mixed $value
+     * @param Mixed $parameters
+     * @return boolean
+     */
     public function validate($field, $value, $parameters): bool
     {
-        if ($value == "" || $value == null) {
+        if ($value == '' || $value == null || empty($value)) {
             return true;
-        } else {
-            $selector = $parameters[1] ?? null;
-            $params = explode('/', $parameters[0]);
-            $table = $params[0];
-            $type = $params[1];
-            $column = $params[2];
-
-            $check = $this->check($value, $table, $type, $column, $selector);
-            return $check;
-
-            // if (is_array($value)) {
-            //     // Loop through value
-            //     foreach ($value as $val) {
-            //         return is_numeric($val);
-            //     }
-            // } else {
-            //     return is_numeric($value);
-            // }
         }
-    }
 
-    public function check($value, $table, $type, $column, $selector)
-    {
-        switch ($table) {
-            case 'user':
-                switch ($type) {
-                    case 'meta':
-                        $databaseValue = get_user_meta($selector, $column, true);
-                        if (is_array($databaseValue)) {
-                            return in_array($value, $databaseValue) ? false : true;
-                        } else {
-                            return $databaseValue == $value ?? false;
-                        }
-                    case 'acf':
-                        return true;
-                    default:
-                        return true;
-                        // $dbValue = get_user()
+        if (empty($parameters)) {
+            throw new Exception("parameters not provided!");
+        }
+
+        $params = explode('/', $parameters[0]);
+        $table = $params[0];
+        $field = $params[1];
+
+        $condition = '=';
+        if (isset($params[2])) {
+            $condition = $params[2];
+        }
+
+        if (!in_array($condition, ['isnull', 'is null', 'isnotnull', 'is not null', 'like', 'in', 'notin', 'not in', '!=', '<>', '>', '>=', '<=', '='])) {
+            throw new Exception("condition parameter should be one of : isnull | is null | isnotnull | is not null | like | in | notin | not in | != | <> | > | >= | <= | =");
+        }
+        
+        if (strpos($field, '.') !== false || is_array($field)) {
+            if (is_array($value)) {
+                $checkValue = [];
+                foreach ($value as $key => $val) {
+                    $checkValue[$key] = $this->check($val, $table, $field, $condition);
                 }
-                break;
-            case 'post':
-                $args = [
-                    'fields'         => 'ids',
-                    'posts_per_page' => 1,
-                    'orderby'        => 'ID',
-                    'post_type'      => $type,
-                    'post_status'    => 'publish',
-                    'post__in'       => [$value]
-                ];
+    
+                return in_array(false, $checkValue) ? false : true;
+            }
 
-                $databaseValue = get_posts($args);
-                return count($databaseValue) > 0 ? false : true;
+            $check = $this->check($value, $table, $field, $condition);
+        } else {
+            $check = $this->check($value, $table, $field, $condition);
         }
+
+        return $check;
     }
 
+    /**
+     * Check post Function
+     *
+     * @param Mixed $values
+     * @param String $postType
+     * @param String $field
+     * @param String $postStatus
+     * @param Mixed $extraArguments
+     * @return boolean
+     */
+    protected function check(Mixed $values, String $table, String $field, String $condition): bool 
+    {
+        if (strpos($field, ';')) {
+            $field = explode(';', $field);
+        }
+
+        $databaseValue = $this->query->$table($table);
+            if (is_array($field)) {
+                foreach($field as $column) {
+                    if (is_array($values)) {
+                        $databaseValue->where($column, $condition, implode(',', $values));
+                    } else {
+                        $databaseValue->where($column, $condition, $values);
+                    }
+                }
+            } else {
+                $databaseValue->where($field, $condition, implode(',', $values));
+            }
+            
+        $databaseValue->limit(1, 0)->get();
+        
+        return count($databaseValue) > 0 ? true : false;
+    }
+
+    /**
+     * Get error message Function
+     *
+     * @param Mixed $field
+     * @param Mixed $parameters
+     * @return string
+     */
     public function getErrorMessage($field, $parameters): string
     {
-        return "The {$field} not found.";
+        $parameters = is_array($parameters) ? $parameters[0] : $parameters;
+        
+        if (strpos($field, '.*') !== false) {
+            return "One of the '" . substr($field, 0, -2) . "' value should has different value with field {$parameters}.";
+        } else {
+            return "The {$field} should has different value with field {$parameters}.";
+        }
     }
 }

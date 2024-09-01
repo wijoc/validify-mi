@@ -3,9 +3,9 @@
 namespace Wijoc\ValidifyMI;
 
 /**
- * Abstract Class Rule
+ * Abstract Class RuleWithRequest
  */
-abstract class Rule {
+abstract class RuleWithRequest {
     public $wordpress;
     public $wpdb;
     public $query;
@@ -17,14 +17,10 @@ abstract class Rule {
             $this->wpdb;
         }
         
-        $host = $_ENV['HOST'] ? $_ENV['HOST'] : (defined('CONNECTION_HOST') ? CONNECTION_HOST : '');
-        $username = $_ENV['USERNAME'] ? $_ENV['USERNAME'] : (defined('CONNECTION_USERNAME') ? CONNECTION_USERNAME : '');
-        $password = $_ENV['PASSWORD'] ? $_ENV['PASSWORD'] : (defined('CONNECTION_PASSWORD') ? CONNECTION_PASSWORD : '');
-        $database = $_ENV['DATABASE'] ? $_ENV['DATABASE'] : (defined('CONNECTION_DATABASE') ? CONNECTION_DATABASE : '');
-        $this->query    = new \Wijoc\QueryBuilder($host, $username, $password, $database);
+        $this->query    = new \Wijoc\QueryBuilder();
     }
 
-    abstract public function validate($field, $value, $parameters): bool;
+    abstract public function validate($field, $value, $request, $parameters): bool;
     abstract public function getErrorMessage($field, $parameters): string;
 
     /**

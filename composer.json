@@ -1,21 +1,20 @@
 {
-  "name": "wijoc/validify-mi",
-  "description": "A stand alone validation for PHP and Wordpress.",
-  "type": "library",
-  "license": "MIT",
-  "authors": [
-      {
-          "name": "Joshua Wicaksono",
-          "email": "wicaksonojoshua@gmail.com"
-      }
-  ],
-  "minimum-stability": "stable",
-  "require": {},
-  "autoload": {
-      "psr-4": {
-          "Wijoc\\ValidifyMI\\": "src/"
-      }
-  },
-  "require-dev": {
+    "name": "wijoc/validify-mi",
+    "description": "A stand alone validation for PHP and Wordpress.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Joshua Wicaksono",
+            "email": "wicaksonojoshua@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Wijoc\\ValidifyMI\\": "src/"
+        }
+    }
   }
-}

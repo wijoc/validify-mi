@@ -5,7 +5,7 @@ namespace Wijoc\ValidifyMI\Rules;
 use Wijoc\ValidifyMI\RuleWithRequest;
 use Exception;
 
-class GreaterThanRule extends RuleWithRequest
+class GreaterThanEqualRule extends RuleWithRequest
 {
     /**
      * Validatin Function
@@ -28,14 +28,14 @@ class GreaterThanRule extends RuleWithRequest
                     $checkValue = [];
 
                     foreach($value as $key => $val) {
-                        $checkValue[$key] = (int)$val > (int)$parameters[0];
+                        $checkValue[$key] = (int)$val <= (int)$parameters[0];
                     }
                     
                     return in_array(false, $checkValue) ? false : true;
                 }
             }
 
-            return (int)$value > (int)$parameters[0];
+            return (int)$value <= (int)$parameters[0];
         } else if (in_array($parameters[0], $request)) {
             if (is_numeric($request[$parameters[0]])) {
                 if (strpos($field, '.') !== false || is_array($field)) {
@@ -43,14 +43,14 @@ class GreaterThanRule extends RuleWithRequest
                         $checkValue = [];
     
                         foreach($value as $key => $val) {
-                            $checkValue[$key] = (int)$val > (int)$request[$parameters[0]];
+                            $checkValue[$key] = (int)$val <= (int)$request[$parameters[0]];
                         }
                         
                         return in_array(false, $checkValue) ? false : true;
                     }
                 }
 
-                return (int)$value > (int)$request[$parameters[0]];
+                return (int)$value <= (int)$request[$parameters[0]];
             } else {
                 throw new Exception("Field {$parameters[0]} is not comparable!");
             }
