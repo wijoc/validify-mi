@@ -472,6 +472,11 @@ class Validator
 
     private function doSanitize(String $rule, Mixed $data, String $parameter = '')
     {
+        /** turn into html special char except email */
+        if ($rule !== 'email') {
+            $data = htmlspecialchars($data);
+        }
+
         switch ($rule):
             case 'email':
                 if (function_exists('sanitize_email')) {
