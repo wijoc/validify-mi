@@ -68,6 +68,10 @@ class ExistsRule extends Rule
      */
     protected function check(Mixed $values, String $table, String $field, String $condition): bool 
     {
+        if (!isset($this->query)) {
+            throw new Exception("Please provide ENV for connection with varible : CONNECTION_HOST, CONNECTION_USERNAME, CONNECTION_PASSWORD, CONNECTION_DATABASE");
+        }
+
         if (strpos($field, ';')) {
             $field = explode(';', $field);
         }

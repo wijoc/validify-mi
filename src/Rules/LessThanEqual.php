@@ -5,7 +5,7 @@ namespace Wijoc\ValidifyMI\Rules;
 use Wijoc\ValidifyMI\RuleWithRequest;
 use Exception;
 
-class GreaterThanEqualRule extends RuleWithRequest
+class LessThanEqualRule extends RuleWithRequest
 {
     /**
      * Validatin Function
