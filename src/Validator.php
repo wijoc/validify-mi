@@ -46,6 +46,8 @@ class Validator
     private $keep_original_parameter;
     private $parameter_might_contain_colon;
     private $is_file_rules;
+    private $finishValidation = false;
+    private $isValidated = false;
 
     public function __construct(array $data = [], array $rules = [], array $messages = [], array $sanitizer = [])
     {
@@ -99,7 +101,18 @@ class Validator
             }
         }
 
-        return empty($this->errors);
+        $this->isValidated = empty($this->errors);
+        $this->finishValidation = true;
+        return $this->isValidated;
+    }
+
+    public function fails() {
+        if (!$this->finishValidation) {
+            $this->validate();
+            return $this->isValidated;
+        }
+
+        return $this->isValidated;
     }
 
     private function getValue($rawKeys, $keys)
@@ -432,12 +445,20 @@ class Validator
 
     public function validated()
     {
-        return $this->data;
+        if (empty($this->errors)) {
+            return $this->data;
+        }
+
+        return [];
     }
 
     public function sanitized()
     {
-        return $this->sanitized;
+        if (empty($this->errors)) {
+            return $this->sanitized;
+        }
+
+        return [];
     }
 
     public function sanitize()
