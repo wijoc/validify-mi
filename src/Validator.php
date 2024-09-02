@@ -109,10 +109,10 @@ class Validator
     public function fails() {
         if (!$this->finishValidation) {
             $this->validate();
-            return $this->isValidated;
+            return !$this->isValidated;
         }
 
-        return $this->isValidated;
+        return !$this->isValidated;
     }
 
     private function getValue($rawKeys, $keys)
