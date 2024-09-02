@@ -42,6 +42,7 @@ A PHP Validation SDK compatible with procedural PHP and WordPress. This SDK set 
 - Compatible with customs error messages
 - Compatible with procedural PHP and WordPress
 - Support Wordpress sanitazion
+- Support nested validation
 
 ## Installation
 
@@ -68,6 +69,64 @@ $input = [
 $rules = [
   'email' => ['required', 'email'],
   'age' => ['required', 'numeric']
+];
+
+$message = [
+  'email.required' => "Email is required!",
+  'email.email' => "Email is invalid!",
+  'age.required' => "Age is required!",
+  'age.numeric' => "Age must be numeric!"
+];
+
+/** Create validator
+* * You can add sanitizer as 4th arguments
+* * (for now it's limited to wordpress sanitize)
+*/
+$validator = Validator::make($input, $rules, $message);
+
+if ($validator->fails()) {
+  /** Validation failed */
+  print_r($validator->errors('all'));
+} else {
+  /** Validation passed */
+  echo "Validation successful!";
+}
+```
+
+Also you can validate nested input with :
+
+```
+<?php
+require 'vendor/autoload.php';
+
+use Wijoc\ValidifyMI\Validator;
+$input = [
+  'email' => 'user@example.com',
+  'age' => 25,
+  'phoneNumber' => [
+    '123456789',
+    '987654321'
+  ],
+  'socialMedia' => [
+    'facebook' => 'https://facebook.com',
+    'twitter' => 'https://twitter.com'
+  ],
+  'address' => [
+    [
+      'city' => 'Jakarta',
+      'province' => 'DKI Jakarta',
+      'postalCode' => '123'
+    ]
+  ]
+];
+
+$rules = [
+  'email' => ['required', 'email'],
+  'age' => ['required', 'numeric'],
+  'phoneNumber' => ['min:1'],
+  'phoneNumber.*' => ['numeric'],
+  'socialMedia.facebook' => ['required'],
+  'socialMedia.*.postalCode' => ['required', 'numeric'],
 ];
 
 $message = [
