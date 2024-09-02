@@ -290,11 +290,13 @@ class Validator
             case 'compare_number':
                 return new CompareNumberRule();
             case 'greater_than':
+            case 'gt':
                 return new GreaterThanRule();
             case 'greater_than_equal':
             case 'gte':
                 return new GreaterThanEqualRule();
             case 'less_than':
+            case 'lt':
                 return new LessThanRule();
             case 'less_than_equal':
             case 'lte':
