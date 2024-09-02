@@ -10,8 +10,8 @@ use Wijoc\ValidifyMI\Rules\EmailRule;
 use Wijoc\ValidifyMI\Rules\MinRule;
 use Wijoc\ValidifyMI\Rules\MaxRule;
 use Wijoc\ValidifyMI\Rules\NumericRule;
-// use Wijoc\ValidifyMI\Rules\ExistsRule;
-// use Wijoc\ValidifyMI\Rules\NotExistsRule;
+use Wijoc\ValidifyMI\Rules\ExistsRule;
+use Wijoc\ValidifyMI\Rules\NotExistsRule;
 // use Wijoc\ValidifyMI\Rules\MaxStoredRule;
 use Wijoc\ValidifyMI\Rules\MatchRule;
 use Wijoc\ValidifyMI\Rules\NotMatchRule;
@@ -258,40 +258,50 @@ class Validator
                 return new NumericRule();
             case 'in':
                 return new InRule();
-                // case 'url':
-                //     return new UrlRule();
-                // case 'exists':
-                //     return new ExistsRule();
-                // case 'not_exists':
-                //     return new NotExistsRule();
-                // case 'max_stored':
-                //     return new MaxStoredRule();
-                // case 'wywsig':
-                //     return new RequiredRule();
-                // case 'mime':
-                //     return new MimeRule();
-                // case 'max_file_size':
-                //     return new FileMaxSizeRule();
+            case 'url':
+                return new UrlRule();
+            case 'exists':
+                return new ExistsRule();
+            case 'not_exists':
+                return new NotExistsRule();
+            // case 'max_stored':
+            //     return new MaxStoredRule();
+            case 'mime':
+                return new MimeRule();
+            case 'max_file_size':
+                return new FileMaxSizeRule();
             case 'match':
                 return new MatchRule();
-                // case 'not_match':
-                //     return new NotMatchRule();
-                // case 'compare_number':
-                //     return new CompareNumberRule();
-                // case 'greater_than':
-                //     return new GreaterThanRule();
-                // case 'is_files':
-                // case 'file':
-                // case 'files':
-                //     return new FilesRule();
+            case 'not_match':
+                return new NotMatchRule();
+            case 'compare_number':
+                return new CompareNumberRule();
+            case 'greater_than':
+                return new GreaterThanRule();
+            case 'greater_than_equal':
+            case 'gte':
+                return new GreaterThanEqualRule();
+            case 'less_than':
+                return new LessThanRule();
+            case 'less_than_equal':
+            case 'lte':
+                return new LessThanEqualRule();
+            case 'is_files':
+            case 'file':
+            case 'files':
+                return new FilesRule();
             case 'regex':
                 return new RegexRule();
                 // case 'must_be':
                 //     return new MustBeRule();
-                // case 'date':
-                //     return new DateRule();
-                // case 'date_more_than':
-                //     return new DateMoreThanRule();
+            case 'date':
+                return new DateRule();
+            case 'date_more_than':
+                return new DateMoreThanRule();
+            case 'date_less_than':
+                return new DateLessThanRule();
+            case 'date_between':
+                return new DateBetweenRule();
             default:
                 throw new Exception("Rule '{$ruleName}' not supported.");
         }
@@ -309,26 +319,26 @@ class Validator
                     } else {
                         $fields = explode('.', $field);
                         $message = $this->messages;
-    
+
                         for ($i = 0; $i < count($fields); $i++) {
                             if (isset($message[$fields[$i]])) {
                                 $message = $message[$fields[$i]];
                             } else {
                                 $message = "";
                             }
-    
+
                             if ($i < 1) {
                                 $field = $fields[$i];
                             } else {
                                 $field .= '[' . $fields[$i] . ']';
                             }
                         }
-    
+
                         if (empty($message) || is_array($message)) {
                             // if (count($fields) > 0) {}
                             $message = $this->getErrorMessage($field, $rule, $parameters);
                         }
-    
+
                         $this->errors[$field][] = $message;
                     }
                 } else {
