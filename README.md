@@ -35,6 +35,12 @@ All inputs are highly appreciated.
   - [Mime](#mime)
   - [In](#in)
   - [Regex](#regex)
+- [Sanitisation ](#sanitisation):
+  - ['email'](#email)
+  - ['textarea'](#textarea)
+  - ['text'](#text)
+  - ['kses'](#kses)
+  - ['ksespost'](#ksespost)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -49,15 +55,21 @@ All inputs are highly appreciated.
 
 ## Installation
 
-You can install the SDK via Composer:
+You can install the library via Composer:
 
 ```bash
 composer  require  wijoc/validify-mi
 ```
 
 ## Usage
+Here is how you use the validation using ::make function.
+Validator::make has 4 arguments :
+1. Input that you want to validate.
+2. Rules of validation.
+3. Custom validation message.
+4. Sanitizion rules. (for now only available for wordpress project)
+All arguments should be an array.
 
-Basic usage of validation:
 
 ```php
 <?php
@@ -90,9 +102,15 @@ $validator = Validator::make($input, $rules, $message);
 if ($validator->fails()) {
   /** Validation failed */
   print_r($validator->errors('all'));
+
+  /** Get first error */
+  $validator->errors()->firstOfAll();
 } else {
   /** Validation passed */
   echo "Validation successful!";
+
+  /** get validated data */
+  $validated = $validator->validate();
 }
 ```
 
@@ -129,7 +147,7 @@ $rules = [
   'phoneNumber' => ['min:1'],
   'phoneNumber.*' => ['numeric'],
   'socialMedia.facebook' => ['required'],
-  'socialMedia.*.postalCode' => ['required', 'numeric'],
+  'address.*.postalCode' => ['required', 'numeric'],
 ];
 
 $message = [
@@ -153,6 +171,112 @@ if ($validator->fails()) {
   echo "Validation successful!";
 }
 ```
+
+  ## Explanation
+  First, we prepare all the necessary parameters to initialize the validator.
+  1. Input to validate :
+  ```php
+  /** Input Value to validate */
+  $input = [
+    'email' => 'user@example.com',
+    'age' => 25
+  ];
+  ```
+
+  2. Validation rules :
+  ```php
+  /** Validation Rule */
+  $rules = [
+    'email' => ['required', 'email'],
+    'age' => ['required', 'numeric']
+  ];
+  ```
+
+  3. Custom validation message :
+  ```php
+  $message = [
+    'email.required' => "Email is required!",
+    'email.email' => "Email is invalid!",
+    'age.required' => "Age is required!",
+    'age.numeric' => "Age must be numeric!"
+  ];
+  ```
+
+  Next, we initialize it with the *Validator::make()* function using the prepared arguments.
+  ```php
+  /** Create validator
+  * * You can add sanitizer as 4th arguments
+  * * (for now it's limited to wordpress sanitize)
+  */
+  $validator = Validator::make($input, $rules, $message);
+  ```
+
+  Afterwards, we can check if the input is validated or not using either the *validate()* or *fails()* function:
+  *validate()* will return **true** if all input __is validated__, and **false** if input __is not validated__.
+  ```php
+  /** Using validate() function */
+  $validator->validate()
+  ```
+  or
+  On the other hand, *fails()* will return **false** if input __is validated__, and **true** if all input __is not validated__.
+  ```php
+  /** Using fails function */
+  $validator->fails()
+  ```
+
+  Example :
+  ```php
+  if ($validator->fails()) {
+    /** Validation failed */
+    print_r($validator->errors('all'));
+  } else {
+    /** Validation passed */
+    echo "Validation successful!";
+  }
+  ```
+
+  If the data is not validated, we can retrieve all errors using the *errors('all')* function. The __'all'__ argument is **required** to get all errors.
+  ```php
+  if ($validator->fails()) {
+    /** Validation failed */
+    print_r($validator->errors('all'));
+  } else {
+    /** Validation passed */
+    echo "Validation successful!";
+  }
+  ```
+  Alternatively, if you only want to get the first error, you can use the *firstOfAll()* method on top of the *errors()* function.
+  **Please note**: If you use *firstOfAll()*, you don't need to add the __'all'__ argument to the *errors()* function.
+  ```php
+  if ($validator->fails()) {
+    /** Validation failed */
+    print_r($validator->errors()->firstOfAll());
+    // print_r($validator->errors('all')->firstOfAll()); -> This will result an exception
+  } else {
+    /** Validation passed */
+    echo "Validation successful!";
+  }
+  ```
+
+  Finally, you can get your validated input with the *validated()* function.
+  *validated()* function will return an array of input if all data is validated, or an empty array if the data is not validated.
+  ```php
+  if ($validator->fails()) {
+    /** Validation failed */
+    print_r($validator->errors()->firstOfAll());
+    // print_r($validator->errors('all')->firstOfAll()); -> This will result an exception
+  } else {
+    /** Validation passed */
+    echo "Validation successful!";
+
+    /** get validated */
+    $validated = $validator->validated();
+    print_r($validated);
+  }
+  ```
+
+  Additionally, if you are working on a WordPress project, you can use the sanitization feature. [Check here for the sanitization feature](#sanitisation).
+
 
 ## Validation Rules
 
@@ -444,5 +568,116 @@ if ($validator->fails()) {
   ```php
   $rule = [
     'input' => ['regex:^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+])(?=\S+$).*'];
+  ];
+  ```
+
+## Sanitisation
+Sanitisation currently only works for WordPress projects, so it uses WordPress' default sanitizer functions.
+Usage :
+
+```php
+<?php
+require 'vendor/autoload.php';
+
+use Wijoc\ValidifyMI\Validator;
+$input = [
+  'email' => 'user@example.com',
+  'age' => 25,
+  'phoneNumber' => [
+    '123456789',
+    '987654321'
+  ],
+  'socialMedia' => [
+    'facebook' => 'https://facebook.com',
+    'twitter' => 'https://twitter.com'
+  ],
+  'address' => [
+    [
+      'city' => 'Jakarta',
+      'province' => 'DKI Jakarta',
+      'postalCode' => '123'
+    ]
+  ]
+];
+
+$rules = [
+  'email' => ['required', 'email'],
+  'age' => ['required', 'numeric'],
+  'phoneNumber' => ['min:1'],
+  'phoneNumber.*' => ['numeric'],
+  'socialMedia.facebook' => ['required'],
+  'address.*.postalCode' => ['required', 'numeric'],
+];
+
+$message = [
+  'email.required' => "Email is required!",
+  'email.email' => "Email is invalid!",
+  'age.required' => "Age is required!",
+  'age.numeric' => "Age must be numeric!"
+];
+
+$sanitizer = [
+  'email' => 'email'
+  'age' => 'text'
+  'phoneNumber.*' => 'text',
+  'socialMedia.facebook' => 'text',
+  'address.*.province' => 'kses'
+];
+
+/** Create validator
+* * You can add sanitizer as 4th arguments
+* * (for now it's limited to wordpress sanitize)
+*/
+$validator = Validator::make($input, $rules, $message, $sanitizer);
+
+if ($validator->fails()) {
+  /** Validation failed */
+  print_r($validator->errors('all'));
+} else {
+  /** get validated data */
+  $validated = $validator->validated();
+
+  /** get sanitized data */
+  $sanitized = $validator->sanitized();
+}
+```
+
+  - ## email
+  This rule is using wordpress *sanitize_email()* function.
+  ```php
+  $sanitizer = [
+    'input' => 'email'
+  ];
+  ```
+
+  - ## textarea
+  This rule is using wordpress *sanitize_textarea_field()* function.
+  ```php
+  $sanitizer = [
+    'input' => 'textarea'
+  ];
+  ```
+
+  - ## text
+  This rule is using wordpress *sanitize_text_field()* function.
+  ```php
+  $sanitizer = [
+    'input' => 'text'
+  ];
+  ```
+
+  - ## kses
+  This rule is using wordpress *wp_kses()* function.
+  ```php
+  $sanitizer = [
+    'input' => 'kses'
+  ];
+  ```
+
+  - ## ksespost
+  This rule is using wordpress *wp_kses_post()* function.
+  ```php
+  $sanitizer = [
+    'input' => 'ksespost'
   ];
   ```
