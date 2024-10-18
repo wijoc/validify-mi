@@ -326,38 +326,35 @@ class Validator
     {
         if ($this->messages && is_array($this->messages)) {
             if (array_key_exists($field . '.' . $rule, $this->messages)) {
-                $this->errors[$field][] = $this->messages[$field . '.' . $rule];
+                $fields = explode('.', $field);
+                $this->errors[$fields[0]][] = $this->messages[$field . '.' . $rule];
             } else if (array_key_exists($field, $this->messages)) {
-                if (is_array($this->messages[$field])) {
-                    if (array_key_exists($rule, $this->messages[$field])) {
-                        $this->errors[$field][] = $this->messages[$field][$rule];
-                    } else {
-                        $fields = explode('.', $field);
-                        $message = $this->messages;
-
-                        for ($i = 0; $i < count($fields); $i++) {
-                            if (isset($message[$fields[$i]])) {
-                                $message = $message[$fields[$i]];
-                            } else {
-                                $message = "";
-                            }
-
-                            if ($i < 1) {
-                                $field = $fields[$i];
-                            } else {
-                                $field .= '[' . $fields[$i] . ']';
-                            }
-                        }
-
-                        if (empty($message) || is_array($message)) {
-                            // if (count($fields) > 0) {}
-                            $message = $this->getErrorMessage($field, $rule, $parameters);
-                        }
-
-                        $this->errors[$field][] = $message;
-                    }
+                if (array_key_exists($rule, $this->messages[$field])) {
+                    $this->errors[$field][] = $this->messages[$field][$rule];
                 } else {
-                    return $this->messages[$field];
+                    $fields = explode('.', $field);
+                    $message = $this->messages;
+
+                    for ($i = 0; $i < count($fields); $i++) {
+                        if (isset($message[$fields[$i]])) {
+                            $message = $message[$fields[$i]];
+                        } else {
+                            $message = "";
+                        }
+
+                        if ($i < 1) {
+                            $field = $fields[$i];
+                        } else {
+                            $field .= '[' . $fields[$i] . ']';
+                        }
+                    }
+
+                    if (empty($message) || is_array($message)) {
+                        // if (count($fields) > 0) {}
+                        $message = $this->getErrorMessage($field, $rule, $parameters);
+                    }
+
+                    $this->errors[$field][] = $message;
                 }
             } else {
                 $fields = explode('.', $field);
