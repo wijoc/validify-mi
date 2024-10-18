@@ -19,12 +19,12 @@ class RegexRule extends Rule
         if ($value == '' || $value == null || empty($value)) {
             return true;
         }
-        
+
         if (is_array($parameters)) {
             $parameters = implode('', $parameters);
         }
         $parameters = preg_replace('/\s+/', ' ', $parameters); // Trim multiple whitespace
-        $parameters = '/' . $parameters . '/i'; // add preg_match pattern
+        $parameters = '/' . $parameters . '/'; // add preg_match pattern
 
         if (strpos($field, '.*') !== false) {
             $checkValue = [];

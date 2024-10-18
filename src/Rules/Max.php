@@ -16,18 +16,33 @@ class MaxRule extends Rule
      */
     public function validate($field, $value, $parameters): bool
     {
-        if ($value == '' || $value == null || empty($value)) {
+        if (!isset($value) || empty($value)) {
             return true;
-        }
-
-        if (is_array($value)) {
-            if (!empty($value)) {
-                return count($value) <= (int)$parameters[0];
-            } else {
-                return true;
-            }
         } else {
-            return strlen($value) <= (int)$parameters[0];
+            if (is_array($value)) {
+                if (is_array($field)) {
+                    foreach ($value as $val) {
+                        if (!empty($val)) {
+                            if (!(strlen($val) <= (int)$parameters[0])) {
+                                return false;
+                                break;
+                            } else {
+                                return true;
+                            }
+                        } else {
+                            return true;
+                        }
+                    }
+                } else {
+                    if (!empty($value)) {
+                        return count($value) <= (int)$parameters[0];
+                    } else {
+                        return true;
+                    }
+                }
+            } else {
+                return strlen($value) <= (int)$parameters[0];
+            }
         }
     }
 
