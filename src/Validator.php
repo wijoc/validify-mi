@@ -334,7 +334,7 @@ class Validator
                 $fields = explode('.', $field);
                 $this->errors[$fields[0]][] = $this->messages[$field . '.' . $rule];
             } else if (array_key_exists($field, $this->messages)) {
-                if (array_key_exists($rule, $this->messages[$field])) {
+                if (is_array($this->messages[$field]) && array_key_exists($rule, $this->messages[$field])) {
                     $this->errors[$field][] = $this->messages[$field][$rule];
                 } else {
                     $fields = explode('.', $field);
