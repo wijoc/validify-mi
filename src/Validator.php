@@ -80,7 +80,11 @@ class Validator
 
                 $value = $this->getValue($rawField, $field);
             } else {
-                $value = isset($this->data[$field]) ? $this->data[$field] : null;
+                if (isset($this->data[$field])) {
+                    $value = isset($this->data[$field]) ? $this->data[$field] : null;
+                } else {
+                    $value = isset($_FILES[$field]) ? $_FILES[$field] : null;
+                }
             }
 
             foreach ($rules as $rule) {
@@ -106,7 +110,8 @@ class Validator
         return $this->isValidated;
     }
 
-    public function fails() {
+    public function fails()
+    {
         if (!$this->finishValidation) {
             $this->validate();
             return !$this->isValidated;
@@ -277,8 +282,8 @@ class Validator
                 return new ExistsRule();
             case 'not_exists':
                 return new NotExistsRule();
-            // case 'max_stored':
-            //     return new MaxStoredRule();
+                // case 'max_stored':
+                //     return new MaxStoredRule();
             case 'mime':
                 return new MimeRule();
             case 'max_file_size':
