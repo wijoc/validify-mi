@@ -11,7 +11,11 @@ class QueryBuilder
     private $select     = [];
     private $columns    = [];
     private $where      = [];
+    private $whereRaw   = [];
+    private $having     = [];
+    private $havingRaw  = [];
     private $orderBy;
+    private $groupBy;
     private $limit;
     private $offset;
     private $joins      = [];
@@ -24,6 +28,7 @@ class QueryBuilder
     private $delete;
     private $parameters  = [];
     private $whereParameters  = [];
+    private $havingParameters = [];
     private $query = '';
 
     private $connection;
@@ -34,7 +39,7 @@ class QueryBuilder
     private $wordpress;
     private $wpdb;
 
-    public function __construct(String $host = '', String $username = '', String $password = '', String $database = '')
+    public function __construct(string $host = '', string $username = '', string $password = '', string $database = '')
     {
         $this->connection($host, $username, $password, $database);
     }
@@ -52,7 +57,7 @@ class QueryBuilder
      * @return self
      * @throws Exception - When failed to create connection.
      */
-    private function connection(String $host = '', String $username = '', String $password = '', String $database = ''): self
+    private function connection(string $host = '', string $username = '', string $password = '', string $database = ''): self
     {
         if ($this->checkIfWordpress()) {
             global $wpdb;
@@ -100,22 +105,26 @@ class QueryBuilder
     /**
      * Set table function
      *
-     * @param String $table
+     * @param string $table
      * @return self
      */
-    public function table(String $table): self
+    public function table(string $table, string $alias = ''): self
     {
-        $this->table = $table;
+        if ($alias !== "") {
+            $this->table = "{$table} AS {$alias}";
+        } else {
+            $this->table = $table;
+        }
         return $this;
     }
 
     /**
      * Select from table function
      *
-     * @param Mixed $columns - Array|String of field name.
+     * @param array<string>|string|null $columns - Array|string of field name.
      * @return self
      */
-    public function select(Mixed $columns = NULL): self
+    public function select(array|string|null $columns = NULL): self
     {
         if (!empty($columns) && $columns !== NULL) {
             if (is_array($columns)) {
@@ -157,7 +166,7 @@ class QueryBuilder
      * @param string $type
      * @return self
      */
-    public function groupWhere(String $type = 'start'): self
+    public function groupWhere(string $type = 'start'): self
     {
         if ($type == 'start') {
             $this->where[]  = "(";
@@ -171,15 +180,23 @@ class QueryBuilder
     /**
      * Where Condition function
      *
-     * @param String $column - String of field name.
-     * @param String $operator
-     * @param Mixed $value
-     * @param Mixed $relation - value oneOf : 'AND' | 'OR'
+     * @param string $column - string of field name.
+     * @param string $operator
+     * @param mixed $value
+     * @param mixed $relation - value oneOf : 'AND' | 'OR'
      * @param array $cast - value must be an array with key : by and into. By to indicate the the column or value to cast, into is casting format
      * @return self
      */
-    public function where(String $column, String $operator, Mixed $value, String $relation = 'AND', array $cast = [], bool $strict = true): self
+    public function where(string $column, string $operator, mixed $value, string $relation = 'AND', array $cast = [], bool $strict = true): self
     {
+        /** store raw where */
+        $this->whereRaw[$column][] = [
+            'operator' => $operator,
+            'relation' => $relation,
+            'value' => $value,
+            'cast' => $cast
+        ];
+
         /** Prepare column that need a strict query and/or need to cast */
         $needCastValue = false;
         if ($strict) {
@@ -257,13 +274,24 @@ class QueryBuilder
                         $castedParametersKey[] = $this->_prepareCast($key, $cast['into'], $strict);
                     }
                 } else {
-                    $castedParametersKey = array_keys($parameterPlaceholders);
+                    $castedParametersKey = array_is_list($parameterPlaceholders) ? array_values($parameterPlaceholders) : array_keys($parameterPlaceholders);
                 }
 
                 if ($this->wordpress) {
                     $whereQuery = "{$column} IN ('" . implode("', '", $castedParametersKey) . "')";
                 } else {
                     $whereQuery = "{$column} IN ('" . implode("', '", $castedParametersKey) . "')";
+                }
+                break;
+            case 'insubquery':
+            case 'in-subquery':
+            case 'in-sub-query':
+            case 'in subquery':
+            case 'in sub-query':
+                if ($this->wordpress) {
+                    $whereQuery = "{$column} IN ({$value})";
+                } else {
+                    $whereQuery = "{$column} IN ({$value})";
                 }
                 break;
             case 'notin':
@@ -399,11 +427,11 @@ class QueryBuilder
     /**
      * Where In condition function
      *
-     * @param String $column
-     * @param Mixed $value
+     * @param string $column
+     * @param mixed $value
      * @return self
      */
-    public function whereIn(String $column, Mixed $value): self
+    public function whereIn(string $column, mixed $value): self
     {
         $parameterPlaceholders  = [];
 
@@ -451,13 +479,180 @@ class QueryBuilder
     /**
      * Order By query function
      *
-     * @param String $column
+     * @param string|array $column
      * @param string $direction
      * @return self
      */
-    public function orderBy(String $column, ?String $direction = 'ASC'): self
+    public function orderBy(mixed $column, ?string $direction = 'ASC'): self
     {
-        $this->orderBy = "`{$column}` {$direction}";
+        if (is_array($column)) {
+            if (array_is_list($column)) {
+                $column = implode(', ', $column);
+                $this->orderBy = "{$column} {$direction}";
+            } else {
+                $this->orderBy = '';
+                foreach ($column as $field => $direction) {
+                    $this->orderBy .= "{$field} {$direction}";
+                }
+            }
+        } else if (is_string($column)) {
+            $this->orderBy = "{$column} {$direction}";
+        }
+        return $this;
+    }
+
+    /**
+     * Group By query function
+     *
+     * @param string $column
+     * @return self
+     */
+    public function groupBy(string $column, bool $strict = false): self
+    {
+        if (str_contains($column, '.')) {
+            $columns = explode('.', $column);
+            // for ($i = 0; $i < count($columns); $i++) {
+            //     if (i < )
+            // }
+            if ($strict) {
+                $column = '`' . implode("`.`", $columns);
+            } else {
+                $column = implode(".", $columns);
+            }
+
+            $this->groupBy = "{$column}";
+        } else {
+            if ($strict) {
+                $this->groupBy = "`{$column}`";
+            } else {
+                $this->groupBy = "{$column}";
+            }
+        }
+        return $this;
+    }
+
+    public function having(string $column, string $operator, mixed $value, string $relation = 'AND', array $cast = [], bool $strict = true): self
+    {
+        /** store raw having */
+        $this->havingRaw[$column][] = [
+            'operator' => $operator,
+            'relation' => $relation,
+            'value' => $value,
+            'cast' => $cast
+        ];
+
+        /** Prepare column that need a strict query and/or need to cast */
+        $needCastValue = false;
+        if ($strict) {
+            if (!empty($cast) && isset($cast['by']) && isset($cast['into'])) {
+                if (strtolower($cast['by']) == 'column' || strtolower($cast['by']) == 'coloumn' || strtolower($cast['by']) == 'field') {
+                    $column = $this->_prepareCast($column, $cast['into'], $strict);
+                } else if (strtolower($cast['by']) == 'value') {
+                    $needCastValue = true;
+                }
+            } else {
+                $column = "`{$column}`";
+            }
+        }
+
+        /** Check if last having is a group bracket */
+        $lastIsGroupBracket = false;
+        if (isset($this->having) && is_array($this->having)) {
+            $lastIsGroupBracket = (end($this->having) == "(");
+        }
+
+        $havingQuery = null;
+        switch (strtolower($operator)) {
+            case '!=':
+            case '<>':
+                $parameters  = $this->_prepareParameters($value, false);
+                $this->havingParameters[] = $parameters;
+
+                /** Prepare cast value */
+                $castedParametersKey = [];
+                if ($needCastValue) {
+                    foreach ($parameters as $key => $value) {
+                        $castedParametersKey[] = $this->_prepareCast($key, $cast['into'], $strict);
+                    }
+                } else {
+                    $castedParametersKey = array_keys($parameters);
+                }
+
+                if ($this->wordpress) {
+                    $havingQuery = "{$column} != '" . implode("', '", $castedParametersKey) . "'"; // not neccesaraly using implode cause this will always
+                } else {
+                    $havingQuery = "{$column} != ?";
+                }
+                break;
+            case '>':
+            case '>=':
+            case '<=':
+                $parameters  = $this->_prepareParameters($value, false);
+                $this->havingParameters[] = $parameters;
+
+                /** Prepare cast value */
+                $castedParametersKey = [];
+                if ($needCastValue) {
+                    foreach ($parameters as $key => $value) {
+                        $castedParametersKey[] = $this->_prepareCast($key, $cast['into'], $strict);
+                    }
+                } else {
+                    $castedParametersKey = array_keys($parameters);
+                }
+
+                if ($this->wordpress) {
+                    $havingQuery = "{$column} {$operator} '" . implode("', '", $castedParametersKey) . "'"; // not neccesaraly using implode cause this will always
+                } else {
+                    $havingQuery = "{$column} {$operator} ?";
+                }
+                break;
+            case '=':
+            default:
+                $parameters  = $this->_prepareParameters($value, false);
+                $this->havingParameters[] = $parameters;
+
+                /** Prepare cast value */
+                $castedParametersKey = [];
+                if ($needCastValue) {
+                    foreach ($parameters as $key => $value) {
+                        $castedParametersKey[] = $this->_prepareCast($key, $cast['into'], $strict);
+                    }
+                } else {
+                    $castedParametersKey = array_keys($parameters);
+                }
+
+                if ($this->wordpress) {
+                    $havingQuery = "{$column} = '" . implode("', '", $castedParametersKey) . "'"; // not neccesaraly using implode cause this will always
+                } else {
+                    $havingQuery = "{$column} = ?";
+                }
+                break;
+        }
+
+        /** Add start of group bracket
+         * end of group bracket will imploded in build having query
+         * that will run in function "build()"
+         */
+        if ($lastIsGroupBracket) {
+            $havingQuery = '(' . $havingQuery;
+        }
+
+        /** Add relation to query */
+        if (!in_array(strtolower($relation), ['and', 'or'])) {
+            $relation = 'AND';
+        }
+
+        if (isset($this->having) && is_array($this->having) && count($this->having) >= 1) {
+            if ($lastIsGroupBracket) {
+                /** Add relation if $lastIsGroupBracket and $lastIsGroupBracket is not in first index */
+                $this->having[count($this->having) - 1] = (count($this->having) - 1) > 0 ? " {$relation} {$havingQuery}" : $havingQuery;
+            } else {
+                $this->having[] = " {$relation} {$havingQuery}";
+            }
+        } else {
+            $this->having[] = $havingQuery;
+        }
+
         return $this;
     }
 
@@ -484,15 +679,15 @@ class QueryBuilder
     /**
      * Join query function
      *
-     * @param String $table - table to join
-     * @param String $firstColumn
-     * @param String $operator
-     * @param String $secondColumn
+     * @param string $table - table to join
+     * @param string $firstColumn
+     * @param string $operator
+     * @param string $secondColumn
      * @param Array $conditions - can be array associative or list with structure each element : 'column', 'operator', and 'value'
-     * @param String $type - accepted value : self | left | right | inner | full or full-outer | cross
+     * @param string $type - accepted value : self | left | right | inner | full or full-outer | cross
      * @return self
      */
-    public function join(String $table, String $firstColumn, String $operator, String $secondColumn, array $conditions = [], ?String $type = 'self'): self
+    public function join(string $table, string $firstColumn, string $operator, string $secondColumn, array $conditions = [], ?string $type = 'self', ?string $alias = NULL): self
     {
         if (!in_array(strtolower($type), ["self", "left", "right", "inner", "full", "full-outer", "cross"])) {
             throw new Exception("Join type must be one of : self | left | right | inner | full or full-outer | cross!");
@@ -513,6 +708,7 @@ class QueryBuilder
         $this->joins[] = [
             'type'  => strtolower($type),
             'table' => $table,
+            'alias' => $alias,
             'firstColumn'   => $firstColumn,
             'secondColumn'  => $secondColumn,
             'operator'      => $operator,
@@ -525,7 +721,7 @@ class QueryBuilder
     /**
      * Add string query as subquery function
      *
-     * @param String $subquery
+     * @param string $subquery
      * @return self
      */
     public function subquery($subquery): self
@@ -550,10 +746,10 @@ class QueryBuilder
      * Insert function
      *
      * @param array $data
-     * @param String|null $execution
+     * @param string|null $execution
      * @return mixed
      */
-    public function insert(array $data = [], ?String $execution = 'execute'): mixed
+    public function insert(array $data = [], ?string $execution = 'execute'): mixed
     {
         if (!empty($data) && $data !== NULL) {
             $this->insertData = $data;
@@ -598,10 +794,10 @@ class QueryBuilder
      *
      * @param array $data
      * @param array $condition
-     * @param String|null $execution
+     * @param string|null $execution
      * @return mixed
      */
-    public function update(array $data = [], array $condition = [], String $execution = 'execute'): mixed
+    public function update(array $data = [], array $condition = [], string $execution = 'execute'): mixed
     {
         if ((!isset($this->where) || empty($this->where)) && (empty($condition) || $condition == NULL)) {
             throw new Exception('Please provide condition!');
@@ -610,7 +806,14 @@ class QueryBuilder
             //     $this->where = [];
             // }
 
-            $this->where = array_unique(array_merge($this->where, $condition));
+            // $this->where = array_unique(array_merge($this->where, $condition));
+            foreach ($condition as $field => $condition) {
+                if (!isset($condition['operator']) || !in_array($condition['operator'], ['isnull', 'is null', 'isnotnull', 'is not null', 'like', 'in', 'notin', 'not in', '!=', '<>', '>', '>=', '<=', '='])) {
+                    continue;
+                }
+
+                $this->where($field, $condition['operator'], $condition['value'], (isset($condition['relation']) ? $condition['relation'] : 'AND'), (isset($condition['cast']) ? $condition['cast'] : []), (isset($condition['strict']) ? $condition['strict'] : false));
+            }
         }
 
         if (!empty($data) && $data !== NULL) {
@@ -654,10 +857,10 @@ class QueryBuilder
      *
      * @param array $data
      * @param array $set
-     * @param String|null $execution
+     * @param string|null $execution
      * @return mixed
      */
-    public function upsert(array $data = [], array $set = [], String $execution = 'execute'): mixed
+    public function upsert(array $data = [], array $set = [], string $execution = 'execute'): mixed
     {
         if (!empty($data) && $data !== NULL) {
             $this->upsertData = $data;
@@ -708,7 +911,7 @@ class QueryBuilder
         return $this;
     }
 
-    public function delete(array $condition = [], String $execution = 'execute'): mixed
+    public function delete(array $condition = [], string $execution = 'execute'): mixed
     {
         if ((!isset($this->where) || empty($this->where)) && (empty($condition) || $condition == NULL)) {
             throw new Exception('Please provide condition!');
@@ -747,9 +950,9 @@ class QueryBuilder
     /**
      * Build string query function
      *
-     * @return String
+     * @return string
      */
-    public function build(): String
+    public function build(): string
     {
         if (is_array($this->select)) {
             $this->select = implode(', ', $this->select);
@@ -790,6 +993,14 @@ class QueryBuilder
             $this->query .= ' ' . $this->subquery;
         }
 
+        if (!empty($this->groupBy)) {
+            $this->query .= " GROUP BY {$this->groupBy}";
+        }
+
+        if (!empty($this->having)) {
+            $this->query .= " HAVING " . implode($this->having);
+        }
+
         if (!empty($this->orderBy)) {
             $this->query .= " ORDER BY {$this->orderBy}";
         }
@@ -809,7 +1020,7 @@ class QueryBuilder
      *
      * @return mixed
      */
-    public function get(String $execution = 'execution'): mixed
+    public function get(string $execution = 'execution'): mixed
     {
         $query = $this->build();
 
@@ -862,7 +1073,7 @@ class QueryBuilder
     /**
      * Insert execution function
      *
-     * @param String|null $execution
+     * @param string|null $execution
      * @return mixed
      */
     public function save(): mixed
@@ -881,7 +1092,7 @@ class QueryBuilder
         return $result;
     }
 
-    private function execute(String $query)
+    private function execute(string $query)
     {
         return $this->connection->query($query);
     }
@@ -889,9 +1100,9 @@ class QueryBuilder
     /**
      * Build insert query function
      *
-     * @return String
+     * @return string
      */
-    private function _buildInsertQuery(): String
+    private function _buildInsertQuery(): string
     {
         if (array_is_list($this->insertData)) {
             if (isset($this->columns) && !empty($this->columns)) {
@@ -957,9 +1168,9 @@ class QueryBuilder
     /**
      * Build insert on duplicate key update query function
      *
-     * @return String
+     * @return string
      */
-    private function _buildUpsertQuery(): String
+    private function _buildUpsertQuery(): string
     {
         if (array_is_list($this->upsertData)) {
             if (isset($this->columns) && !empty($this->columns)) {
@@ -1026,8 +1237,14 @@ class QueryBuilder
 
         $update = '';
         foreach ($this->upsertSetData as $field => $setValues) {
-            if ($setValues[0] == ':' || strpos($setValues, ':') === 0 || strpos($setValues, ':') === "0") {
-                $update .= "{$field} = VALUES($field)" . substr($setValues, 1);
+            if ($setValues == NULL) {
+                $update .= "{$field} = NULL";
+            } else if (is_string($setValues)) {
+                if ((is_array($setValues) && $setValues[0] == ':') || strpos($setValues, ':') === 0 || strpos($setValues, ':') === "0") {
+                    $update .= "{$field} = VALUES($field)" . substr($setValues, 1);
+                } else {
+                    $update .= "{$field} = VALUES($field)";
+                }
             } else {
                 $update .= "{$field} = VALUES($field)";
             }
@@ -1084,10 +1301,10 @@ class QueryBuilder
     /**
      * Join query function
      *
-     * @return String
+     * @return string
      * @throws Exception - If join conditions is not an array list
      */
-    private function _buildJoinQuery(): String
+    private function _buildJoinQuery(): string
     {
         $query = '';
         foreach ($this->joins as $join) {
@@ -1114,6 +1331,11 @@ class QueryBuilder
                     break;
             }
 
+            $query .= " {$join['table']}";
+            if (isset($join['alias']) && $join['alias'] !== NULL && $join['alias'] !== "") {
+                $query .= " {$join['alias']}";
+            }
+
             $query .= " ON {$join['firstColumn']} {$join['operator']} {$join['secondColumn']}";
 
             if (array_key_exists('conditions', $join)) {
@@ -1138,10 +1360,10 @@ class QueryBuilder
     /**
      * Prepare parameter for mysql prepare statement function
      *
-     * @param Mixed $value
+     * @param mixed $value
      * @return array
      */
-    private function _prepareParameters(Mixed $value, bool $bindType = true): array
+    private function _prepareParameters(mixed $value, bool $bindType = true): array
     {
         /** Determine the data type of the value */
         switch (true) {
@@ -1153,7 +1375,6 @@ class QueryBuilder
                 } else {
                     return ['?' => $value];
                 }
-                break;
             case is_bool($value):
                 $value = $value ? 1 : 0;
                 if ($this->wordpress) {
@@ -1163,7 +1384,6 @@ class QueryBuilder
                 } else {
                     return ['?' => $value];
                 }
-                break;
             case is_float($value):
                 if ($this->wordpress) {
                     return ['%f' => $value];
@@ -1172,7 +1392,6 @@ class QueryBuilder
                 } else {
                     return ['?' => $value];
                 }
-                break;
             case is_string($value):
             case $value === NULL:
                 if ($this->wordpress) {
@@ -1182,7 +1401,6 @@ class QueryBuilder
                 } else {
                     return ['?' => $value];
                 }
-                break;
             default:
                 throw new Exception("Unsupported data type for parameter");
         }
@@ -1191,11 +1409,11 @@ class QueryBuilder
     /**
      * Setup query value function
      *
-     * @param String $type
-     * @param Mixed $value
+     * @param string $type
+     * @param mixed $value
      * @return mixed
      */
-    private function _prepareQueryValue(String $type, Mixed $value): mixed
+    private function _prepareQueryValue(string $type, mixed $value): mixed
     {
         switch (strtolower($type)) {
             case 'where':
@@ -1222,7 +1440,6 @@ class QueryBuilder
                 }
 
                 return $value;
-                break;
             default:
                 return $value;
         }
@@ -1248,54 +1465,50 @@ class QueryBuilder
             }
         }
 
+        if (is_array($this->havingParameters)) {
+            foreach ($this->havingParameters as $parameter) {
+                $parameterValue = array_merge($parameterValue, array_values($parameter));
+            }
+        }
+
         return $parameterValue;
     }
 
     /**
      * Prepare cast query function
      *
-     * @param String $source
-     * @param String $into
+     * @param string $source
+     * @param string $into
      * @param boolean $strict
      * @return string
      */
-    private function _prepareCast(String $source, String $into, bool $strict = true): string
+    private function _prepareCast(string $source, string $into, bool $strict = true): string
     {
         switch (strtolower($into)) {
             case 'date':
                 return ($strict ? "CAST(`{$source}` AS DATE)" : "CAST({$source} AS DATE)");
-                break;
             case 'datetime':
                 return ($strict ? "CAST(`{$source}` AS DATETIME)" : "CAST({$source} AS DATETIME)");
-                break;
             case 'time':
                 return ($strict ? "CAST(`{$source}` AS TIME)" : "CAST({$source} AS TIME)");
-                break;
             case 'decimal':
                 return ($strict ? "CAST(`{$source}` AS DECIMAL)" : "CAST({$source} AS DECIMAL)");
-                break;
             case 'char':
             case 'character':
                 return ($strict ? "CAST(`{$source}` AS CHAR)" : "CAST({$source} AS CHAR)");
-                break;
             case 'nchar':
             case 'ncharacter':
                 return ($strict ? "CAST(`{$source}` AS NCHAR)" : "CAST({$source} AS NCHAR)");
-                break;
             case 'signed':
             case 'signedinteger':
                 return ($strict ? "CAST(`{$source}` AS SIGNED)" : "CAST({$source} AS SIGNED)");
-                break;
             case 'unsigned':
             case 'unsignedinteger':
                 return ($strict ? "CAST(`{$source}` AS UNSIGNED)" : "CAST({$source} AS UNSIGNED)");
-                break;
             case 'binary':
                 return ($strict ? "CAST(`{$source}` AS BINARY)" : "CAST({$source} AS BINARY)");
-                break;
             default:
                 return $source;
-                break;
         }
     }
 
