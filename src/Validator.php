@@ -6,6 +6,7 @@ require_once "autoload.php";
 
 use Wijoc\ValidifyMI\Rule;
 use Wijoc\ValidifyMI\Rules\RequiredRule;
+use Wijoc\ValidifyMI\Rules\RequiredIfRule;
 use Wijoc\ValidifyMI\Rules\EmailRule;
 use Wijoc\ValidifyMI\Rules\MinRule;
 use Wijoc\ValidifyMI\Rules\MaxRule;
@@ -266,6 +267,9 @@ class Validator
         switch ($ruleName) {
             case 'required':
                 return new RequiredRule();
+            case 'requiredif':
+            case 'required_if':
+                return new RequiredIfRule();
             case 'email':
                 return new EmailRule();
             case 'min':
