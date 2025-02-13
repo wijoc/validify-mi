@@ -6,6 +6,7 @@ require_once "autoload.php";
 
 use Wijoc\ValidifyMI\Rule;
 use Wijoc\ValidifyMI\Rules\RequiredRule;
+use Wijoc\ValidifyMI\Rules\RequiredIfRule;
 use Wijoc\ValidifyMI\Rules\EmailRule;
 use Wijoc\ValidifyMI\Rules\MinRule;
 use Wijoc\ValidifyMI\Rules\MaxRule;
@@ -32,7 +33,6 @@ use Wijoc\ValidifyMI\Rules\DateLessThanRule;
 use Wijoc\ValidifyMI\Rules\DateBetweenRule;
 
 use Exception;
-use Wijoc\ValidifyMI\Rules\RequiredIfRule;
 
 class Validator
 {

@@ -77,6 +77,21 @@ class RequiredIfRule extends RuleWithRequest
         $fieldValues = $request[$fieldName];
         $valueToCompare = isset($parameters[1]) ? $parameters[1] : NULL;
 
+        /** Check if field exists */
+        if (strpos($fieldName, '.') !== false) {
+            $fieldNames = explode('.', $fieldName);
+            if ($fieldNames[1] == '*') {
+                $fieldValues = $request[$fieldNames[0]];
+            } else {
+                $fieldValues = $request;
+                foreach ($fieldNames as $field) {
+                    if ($field !== '*') {
+                        $fieldValues = $fieldValues[$field];
+                    }
+                }
+            }
+        }
+
         /** Check if values is empty */
         if (empty($fieldValues)) {
             return false;
@@ -123,7 +138,19 @@ class RequiredIfRule extends RuleWithRequest
                             if (empty(trim($value))) {
                                 return false;
                             } else {
-                                return $value == $valueToCompare;
+                                /** Handling if given parameter in boolean */
+                                if (is_bool($valueToCompare)) {
+                                    if ($valueToCompare) {
+                                        return $value == "1" || $value == 'true';
+                                    } else {
+                                        return ($value == "0" || $value == 'false');
+                                    }
+                                } else if (is_string($valueToCompare) && $valueToCompare == 'null') {
+                                    /** Handling if given parameter is NULL in string */
+                                    return $value == NULL;
+                                } else {
+                                    return $value == $valueToCompare;
+                                }
                             }
                         } else {
                             if (empty($value)) {
@@ -135,6 +162,16 @@ class RequiredIfRule extends RuleWithRequest
                     }
 
                     return !empty($fieldValues) ? ($fieldValues == $valueToCompare) : false;
+                } else if (is_bool($valueToCompare)) {
+                    /** Handling if given parameter in boolean */
+                    if ($valueToCompare) {
+                        return !empty($fieldValues) ? ($fieldValues == "1" || $fieldValues == 'true') : false;
+                    } else {
+                        return !empty($fieldValues) ? ($fieldValues == "0" || $fieldValues == 'false') : false;
+                    }
+                } else if (is_string($valueToCompare) && $valueToCompare == 'null') {
+                    /** Handling if given parameter is NULL in string */
+                    return !empty($fieldValues) ? ($fieldValues == NULL) : false;
                 } else {
                     return !empty($fieldValues) ? ($fieldValues == $valueToCompare) : false;
                 }
@@ -155,12 +192,12 @@ class RequiredIfRule extends RuleWithRequest
      */
     public function getErrorMessage($field, $parameters): string
     {
-        $parameters = is_array($parameters) ? $parameters[0] : $parameters;
+        $parameters = is_array($parameters) ? $parameters : [$parameters];
 
         if (strpos($field, '.*') !== false) {
-            return "One of the '" . substr($field, 0, -2) . "' value should has same value with field {$parameters}.";
+            return "One of the '" . substr($field, 0, -2) . "' value is required when field {$parameters[0]}'s value is {$parameters[1]}.";
         } else {
-            return "The {$field} should has same value with field {$parameters}.";
+            return "The {$field} is required when field {$parameters[0]}'s value is {$parameters[1]}.";
         }
     }
 }
