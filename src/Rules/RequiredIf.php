@@ -25,7 +25,7 @@ class RequiredIfRule extends RuleWithRequest
         if (!empty($parameters)) {
             // $parameters = is_array($parameters) ? $parameters[0] : $parameters;
 
-            if (array_key_exists($parameters, $request)) {
+            if (is_array($request) && array_key_exists($parameters[0], $request)) {
                 /** Check if main condition is required */
                 $mainConditionIsValid = $this->_checkMainRequestCondition($parameters, $request);
 
