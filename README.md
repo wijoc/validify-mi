@@ -12,6 +12,7 @@ All inputs are highly appreciated.
 - [Usage](#usage)
 - [Validation Rules](#validation-rules)
   - [Required](#required)
+  - [Required If](#required-if)
   - [Email](#email)
   - [URL](#url)
   - [Numeric](#numeric)
@@ -62,14 +63,15 @@ composer  require  wijoc/validify-mi
 ```
 
 ## Usage
+
 Here is how you use the validation using ::make function.
 Validator::make has 4 arguments :
+
 1. Input that you want to validate.
 2. Rules of validation.
 3. Custom validation message.
 4. Sanitizion rules. (for now only available for wordpress project)
-All arguments should be an array.
-
+   All arguments should be an array.
 
 ```php
 <?php
@@ -172,111 +174,124 @@ if ($validator->fails()) {
 }
 ```
 
-  ## Explanation
-  First, we prepare all the necessary parameters to initialize the validator.
-  1. Input to validate :
-  ```php
-  /** Input Value to validate */
-  $input = [
-    'email' => 'user@example.com',
-    'age' => 25
-  ];
-  ```
+## Explanation
 
-  2. Validation rules :
-  ```php
-  /** Validation Rule */
-  $rules = [
-    'email' => ['required', 'email'],
-    'age' => ['required', 'numeric']
-  ];
-  ```
+First, we prepare all the necessary parameters to initialize the validator.
 
-  3. Custom validation message :
-  ```php
-  $message = [
-    'email.required' => "Email is required!",
-    'email.email' => "Email is invalid!",
-    'age.required' => "Age is required!",
-    'age.numeric' => "Age must be numeric!"
-  ];
-  ```
+1. Input to validate :
 
-  Next, we initialize it with the *Validator::make()* function using the prepared arguments.
-  ```php
-  /** Create validator
-  * * You can add sanitizer as 4th arguments
-  * * (for now it's limited to wordpress sanitize)
-  */
-  $validator = Validator::make($input, $rules, $message);
-  ```
+```php
+/** Input Value to validate */
+$input = [
+  'email' => 'user@example.com',
+  'age' => 25
+];
+```
 
-  Afterwards, we can check if the input is validated or not using either the *validate()* or *fails()* function:
-  *validate()* will return **true** if all input __is validated__, and **false** if input __is not validated__.
-  ```php
-  /** Using validate() function */
-  $validator->validate()
-  ```
-  or
-  On the other hand, *fails()* will return **false** if input __is validated__, and **true** if all input __is not validated__.
-  ```php
-  /** Using fails function */
-  $validator->fails()
-  ```
+2. Validation rules :
 
-  Example :
-  ```php
-  if ($validator->fails()) {
-    /** Validation failed */
-    print_r($validator->errors('all'));
-  } else {
-    /** Validation passed */
-    echo "Validation successful!";
-  }
-  ```
+```php
+/** Validation Rule */
+$rules = [
+  'email' => ['required', 'email'],
+  'age' => ['required', 'numeric']
+];
+```
 
-  If the data is not validated, we can retrieve all errors using the *errors('all')* function. The __'all'__ argument is **required** to get all errors.
-  ```php
-  if ($validator->fails()) {
-    /** Validation failed */
-    print_r($validator->errors('all'));
-  } else {
-    /** Validation passed */
-    echo "Validation successful!";
-  }
-  ```
-  Alternatively, if you only want to get the first error, you can use the *firstOfAll()* method on top of the *errors()* function.
-  **Please note**: If you use *firstOfAll()*, you don't need to add the __'all'__ argument to the *errors()* function.
-  ```php
-  if ($validator->fails()) {
-    /** Validation failed */
-    print_r($validator->errors()->firstOfAll());
-    // print_r($validator->errors('all')->firstOfAll()); -> This will result an exception
-  } else {
-    /** Validation passed */
-    echo "Validation successful!";
-  }
-  ```
+3. Custom validation message :
 
-  Finally, you can get your validated input with the *validated()* function.
-  *validated()* function will return an array of input if all data is validated, or an empty array if the data is not validated.
-  ```php
-  if ($validator->fails()) {
-    /** Validation failed */
-    print_r($validator->errors()->firstOfAll());
-    // print_r($validator->errors('all')->firstOfAll()); -> This will result an exception
-  } else {
-    /** Validation passed */
-    echo "Validation successful!";
+```php
+$message = [
+  'email.required' => "Email is required!",
+  'email.email' => "Email is invalid!",
+  'age.required' => "Age is required!",
+  'age.numeric' => "Age must be numeric!"
+];
+```
 
-    /** get validated */
-    $validated = $validator->validated();
-    print_r($validated);
-  }
-  ```
+Next, we initialize it with the _Validator::make()_ function using the prepared arguments.
 
-  Additionally, if you are working on a WordPress project, you can use the sanitization feature. [Check here for the sanitization feature](#sanitisation).
+```php
+/** Create validator
+* * You can add sanitizer as 4th arguments
+* * (for now it's limited to wordpress sanitize)
+*/
+$validator = Validator::make($input, $rules, $message);
+```
 
+Afterwards, we can check if the input is validated or not using either the _validate()_ or _fails()_ function:
+_validate()_ will return **true** if all input **is validated**, and **false** if input **is not validated**.
+
+```php
+/** Using validate() function */
+$validator->validate()
+```
+
+or
+On the other hand, _fails()_ will return **false** if input **is validated**, and **true** if all input **is not validated**.
+
+```php
+/** Using fails function */
+$validator->fails()
+```
+
+Example :
+
+```php
+if ($validator->fails()) {
+  /** Validation failed */
+  print_r($validator->errors('all'));
+} else {
+  /** Validation passed */
+  echo "Validation successful!";
+}
+```
+
+If the data is not validated, we can retrieve all errors using the _errors('all')_ function. The **'all'** argument is **required** to get all errors.
+
+```php
+if ($validator->fails()) {
+  /** Validation failed */
+  print_r($validator->errors('all'));
+} else {
+  /** Validation passed */
+  echo "Validation successful!";
+}
+```
+
+Alternatively, if you only want to get the first error, you can use the _firstOfAll()_ method on top of the _errors()_ function.
+**Please note**: If you use _firstOfAll()_, you don't need to add the **'all'** argument to the _errors()_ function.
+
+```php
+if ($validator->fails()) {
+  /** Validation failed */
+  print_r($validator->errors()->firstOfAll());
+  // print_r($validator->errors('all')->firstOfAll()); -> This will result an exception
+} else {
+  /** Validation passed */
+  echo "Validation successful!";
+}
+```
+
+Finally, you can get your validated input with the _validated()_ function.
+_validated()_ function will return an array of input if all data is validated, or an empty array if the data is not validated.
+
+```php
+if ($validator->fails()) {
+  /** Validation failed */
+  print_r($validator->errors()->firstOfAll());
+  // print_r($validator->errors('all')->firstOfAll()); -> This will result an exception
+} else {
+  /** Validation passed */
+  echo "Validation successful!";
+
+  /** get validated */
+  $validated = $validator->validated();
+  print_r($validated);
+}
+```
+
+Additionally, if you are working on a WordPress project, you can use the sanitization feature. [Check here for the sanitization feature](#sanitisation).
 
 ## Validation Rules
 
@@ -285,6 +300,13 @@ if ($validator->fails()) {
   ```php
   $rules = [
     'input' => ['required']
+  ];
+  ```
+- ## Required If
+  Check if given data is empty, depends on another fields value.
+  ```php
+  $rules = [
+    'input' => ['requiredif:fieldA,true']
   ];
   ```
 - ## email
@@ -401,19 +423,25 @@ if ($validator->fails()) {
   ];
   ```
 - ## date-more-than
+
   Check value is a date later than given parameter. Parameter can be other input.
+
   ```php
   $rules = [
     'input' => ['date_more_than:{date or request field},{date format}']
   ];
   ```
+
   example :
+
   ```php
   $rules = [
     'input' => ['date_more_than:2024-12-01 01:59:59, Y-m-d H:i:s']
   ];
   ```
+
   or :
+
   ```php
   $request = [
     'inputToCompare' => '2024-01-30',
@@ -425,19 +453,25 @@ if ($validator->fails()) {
   ```
 
 - ## date-less-than
+
   Check value is a date older than given parameter. Parameter can be other input.
+
   ```php
   $rules = [
     'input' => ['date_less_than:{date or request field},{date format}']
   ];
   ```
+
   example :
+
   ```php
   $rules = [
     'input' => ['date_less_than:2024-12-01 01:59:59,Y-m-d H:i:s']
   ];
   ```
+
   or :
+
   ```php
   $request = [
     'inputToCompare' => '2024-01-30',
@@ -450,19 +484,25 @@ if ($validator->fails()) {
   ```
 
 - ## date-between
+
   Check value is a date is between than given parameter. Parameter can be another request input.
+
   ```php
   $rules = [
     'input' => ['date_between:{start date or request field},{end date or request field},{date format}']
   ];
   ```
+
   example :
+
   ```php
   $rules = [
     'input' => ['date_between:2024-12-01 01:59:59,2024-12-31 01:59:59,Y-m-d H:i:s']
   ];
   ```
+
   or :
+
   ```php
   $request = [
     'inputStart' => '2024-01-01',
@@ -572,6 +612,7 @@ if ($validator->fails()) {
   ```
 
 ## Sanitisation
+
 Sanitisation currently only works for WordPress projects, so it uses WordPress' default sanitizer functions.
 Usage :
 
@@ -642,42 +683,47 @@ if ($validator->fails()) {
 }
 ```
 
-  - ## email
-  This rule is using wordpress *sanitize_email()* function.
-  ```php
-  $sanitizer = [
-    'input' => 'email'
-  ];
-  ```
+- ## email
+  This rule is using wordpress _sanitize_email()_ function.
 
-  - ## textarea
-  This rule is using wordpress *sanitize_textarea_field()* function.
-  ```php
-  $sanitizer = [
-    'input' => 'textarea'
-  ];
-  ```
+```php
+$sanitizer = [
+  'input' => 'email'
+];
+```
 
-  - ## text
-  This rule is using wordpress *sanitize_text_field()* function.
-  ```php
-  $sanitizer = [
-    'input' => 'text'
-  ];
-  ```
+- ## textarea
+  This rule is using wordpress _sanitize_textarea_field()_ function.
 
-  - ## kses
-  This rule is using wordpress *wp_kses()* function.
-  ```php
-  $sanitizer = [
-    'input' => 'kses'
-  ];
-  ```
+```php
+$sanitizer = [
+  'input' => 'textarea'
+];
+```
 
-  - ## ksespost
-  This rule is using wordpress *wp_kses_post()* function.
-  ```php
-  $sanitizer = [
-    'input' => 'ksespost'
-  ];
-  ```
+- ## text
+  This rule is using wordpress _sanitize_text_field()_ function.
+
+```php
+$sanitizer = [
+  'input' => 'text'
+];
+```
+
+- ## kses
+  This rule is using wordpress _wp_kses()_ function.
+
+```php
+$sanitizer = [
+  'input' => 'kses'
+];
+```
+
+- ## ksespost
+  This rule is using wordpress _wp_kses_post()_ function.
+
+```php
+$sanitizer = [
+  'input' => 'ksespost'
+];
+```
