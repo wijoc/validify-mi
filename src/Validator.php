@@ -59,7 +59,7 @@ class Validator
         $this->sanitizer = $sanitizer;
         $this->errors = [];
         $this->ignored_rules = ['explode'];
-        $this->with_request_rules = ['date', 'match', 'not_match', 'compare_number', 'greater_than', 'date', 'date_more_than', 'file', 'files', 'is_files', 'max_file_size'];
+        $this->with_request_rules = ['requiredif', 'required_if', 'date', 'match', 'not_match', 'compare_number', 'greater_than', 'date', 'date_more_than', 'file', 'files', 'is_files', 'max_file_size'];
         $this->keep_original_parameter = ['regex'];
         $this->parameter_might_contain_colon = ['regex'];
         $this->is_file_rules = ['file', 'files', 'is_files'];
