@@ -36,6 +36,7 @@ All inputs are highly appreciated.
   - [Mime](#mime)
   - [In](#in)
   - [Regex](#regex)
+  - [Type Is](#type-is)
 - [Sanitisation ](#sanitisation):
   - ['email'](#email)
   - ['textarea'](#textarea)
@@ -102,7 +103,7 @@ $message = [
 $validator = Validator::make($input, $rules, $message);
 
 if ($validator->fails()) {
-  /** Validation failed */
+  /** VaType Islidation failed */
   print_r($validator->errors('all'));
 
   /** Get first error */
@@ -608,6 +609,28 @@ Additionally, if you are working on a WordPress project, you can use the sanitiz
   ```php
   $rule = [
     'input' => ['regex:^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+])(?=\S+$).*'];
+  ];
+  ```
+- ## Type Is
+  Check if input value type is match the parameter. Available type to validate:
+  - string: string || str
+  - numeric: numeric || number
+  - boolean: bool || boolean
+  - array: array
+  ```php
+  $rule = [
+    /** Pick one of this usage */
+    'input' => ['typeis:{type}'];
+    'input' => ['type_is:{type}'];
+    'input' => ['is:{type}'];
+  ];
+  ```
+  Example :
+  ```php
+  $rule = [
+    'input' => ['is:str'],
+    'inputOne' => ['is:array'],
+    'inputOne.*' => ['is:string'],
   ];
   ```
 
