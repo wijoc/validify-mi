@@ -294,6 +294,37 @@ class QueryBuilder
                     $whereQuery = "{$column} IN ({$value})";
                 }
                 break;
+            case 'subquery':
+                $whereQuery = "$column";
+                break;
+            case 'between':
+                // $whereQuery = "{$column} BETWEEN ({$value[0]}, {$value[1]})";
+                $betweenParameters = [];
+
+                $parameters = $this->_prepareParameters("$value[0]");
+                $this->whereParameters[] = $parameters;
+                $betweenParameters[] = array_keys($parameters)[0];
+
+                $parameters = $this->_prepareParameters("$value[1]");
+                $this->whereParameters[] = $parameters;
+                $betweenParameters[] = array_keys($parameters)[0];
+
+                /** Prepare cast value */
+                $castedParametersKey = [];
+                if ($needCastValue) {
+                    foreach ($parameters as $key => $value) {
+                        $castedParametersKey[] = $this->_prepareCast($key, $cast['into'], $strict);
+                    }
+                } else {
+                    $castedParametersKey = $betweenParameters;
+                }
+
+                if ($this->wordpress) {
+                    $whereQuery = "{$column} BETWEEN '" . implode("' AND '", $castedParametersKey) . "'"; // not neccesaraly using implode cause this will always
+                } else {
+                    $whereQuery = "{$column} BETWEEN ? AND ?";
+                }
+                break;
             case 'notin':
             case 'not in':
                 $parameterPlaceholders  = [];
@@ -1118,7 +1149,10 @@ class QueryBuilder
                 }
             }
 
-            $columns    = implode(', ', $columns);
+            if (is_array($columns)) {
+                $columns    = implode(', ', $columns);
+            }
+
             $values     = '';
             for ($i = 0; $i < count($this->insertData); $i++) {
                 $eachDataParameter      = [];
@@ -1189,17 +1223,37 @@ class QueryBuilder
                 $parameterPlaceholders  = [];
 
                 foreach ($this->upsertData[$i] as $data) {
-                    $parameter  = $this->_prepareParameters($data);
-                    $eachDataParameter[]    = $parameter;
-                    $parameterPlaceholders  = array_merge($parameterPlaceholders, array_keys($parameter));
+                    if ($data[0] == 'query:' || strpos($data, 'query:') === 0 || strpos($data, 'query:') === "0") {
+                        // list($queryPlaceHolder, $data) = explode('query:', $data);
+                        $eachDataParameter[] = $data;
+                    } else {
+                        $parameter  = $this->_prepareParameters($data);
+                        $eachDataParameter[]    = $parameter;
+                        $parameterPlaceholders  = array_merge($parameterPlaceholders, array_keys($parameter));
+                    }
                 }
 
                 /** Flatten the data parameter */
                 foreach ($eachDataParameter as $parameter) {
-                    $this->parameters[]         = $parameter;
+                    $this->parameters[] = $parameter;
                 }
 
-                $values .= "('" . implode("', '", $parameterPlaceholders) . "')";
+                // $values .= "('" . implode("', '", $parameterPlaceholders) . "')";
+                $values .= "(";
+                foreach ($parameterPlaceholders as $placeholder) {
+                    if ($placeholder[0] == 'query:' || strpos($placeholder, 'query:') === 0 || strpos($placeholder, 'query:') === "0") {
+                        list($queryPlaceHolder, $data) = explode('query:', $placeholder);
+                        $values .= $data;
+                    } else {
+                        $values .= "'{$placeholder}'";
+                    }
+
+                    if ($placeholder !== end($parameterPlaceholders)) {
+                        $values .= ', ';
+                    }
+                }
+                $values .= ")";
+
                 if ($i < (count($this->upsertData) - 1)) {
                     $values .= ', ';
                 }
@@ -1207,7 +1261,10 @@ class QueryBuilder
 
             $update = '';
             foreach ($this->upsertSetData as $field => $setValues) {
-                if ($setValues[0] == ':' || strpos($setValues, ':') === 0 || strpos($setValues, ':') === "0") {
+                if ($setValues[0] == 'query:' || strpos($setValues, 'query:') === 0 || strpos($setValues, 'query:') === "0") {
+                    list($queryPlaceHolder, $setValues) = explode('query:', $setValues);
+                    $update .= "{$field} = {$setValues}";
+                } else if ($setValues[0] == ':' || strpos($setValues, ':') === 0 || strpos($setValues, ':') === "0") {
                     $update .= "{$field} = VALUES($field)" . substr($setValues, 1);
                 } else {
                     $update .= "{$field} = VALUES($field)";
@@ -1227,21 +1284,54 @@ class QueryBuilder
             }
 
             $values = "";
-            $dataParameter = [];
+            $parametersKey = [];
             foreach ($this->upsertData as $data) {
-                $dataParameter  = array_merge($dataParameter, $this->_prepareParameters($data));
+                if ($data[0] == 'query:' || strpos($data, 'query:') === 0 || strpos($data, 'query:') === "0") {
+                    // list($queryPlaceHolder, $data) = explode('query:', $data);
+                    $parametersKey[] = $data;
+                } else {
+                    $parameter = $this->_prepareParameters($data);
+                    $parametersKey = array_merge($parametersKey, array_keys($parameter));
+                    $this->parameters[] = $parameter;
+                }
             }
 
-            $values .= "('" . implode("', '", array_keys($dataParameter)) . "')";
+            // $values .= "('" . implode("', '", $parametersKey) . "')";
+            $values .= "(";
+            foreach ($parametersKey as $placeholder) {
+                if ($placeholder[0] == 'query:' || strpos($placeholder, 'query:') === 0 || strpos($placeholder, 'query:') === "0") {
+                    list($queryPlaceHolder, $data) = explode('query:', $placeholder);
+                    $values .= $data;
+                } else {
+                    $values .= "'{$placeholder}'";
+                }
+
+                if ($placeholder !== end($parametersKey)) {
+                    $values .= ', ';
+                }
+            }
+            $values .= ")";
         }
 
         $update = '';
+
         foreach ($this->upsertSetData as $field => $setValues) {
             if ($setValues == NULL) {
                 $update .= "{$field} = NULL";
             } else if (is_string($setValues)) {
-                if ((is_array($setValues) && $setValues[0] == ':') || strpos($setValues, ':') === 0 || strpos($setValues, ':') === "0") {
+                if (strpos($setValues, 'query:') === 0 || strpos($setValues, 'query:') === "0") {
+                    list($queryPlaceHolder, $setValues) = explode('query:', $setValues);
+                    $update .= "{$field} = {$setValues}";
+                } else if (strpos($setValues, ':') === 0 || strpos($setValues, ':') === "0") {
                     $update .= "{$field} = VALUES($field)" . substr($setValues, 1);
+                } else {
+                    $update .= "{$field} = VALUES($field)";
+                }
+            } else if (is_array($setValues)) {
+                if (($setValues[0] == 'query:')) {
+                    $update .= "{$field} = VALUES($field)" . $setValues[1];
+                } else if (($setValues[0] == ':')) {
+                    $update .= "{$field} = VALUES($field)" . $setValues[1];
                 } else {
                     $update .= "{$field} = VALUES($field)";
                 }
