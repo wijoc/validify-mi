@@ -33,6 +33,7 @@ use Wijoc\ValidifyMI\Rules\DateLessThanRule;
 use Wijoc\ValidifyMI\Rules\DateBetweenRule;
 
 use Exception;
+use Wijoc\ValidifyMI\Rules\TypeIs;
 
 class Validator
 {
@@ -154,10 +155,14 @@ class Validator
             }
             $values = [];
 
-            if (array_is_list($datas)) {
-                $fromArray = $keys[0] == '*' ? false : true;
+            if (is_array($datas)) {
+                if (array_is_list($datas)) {
+                    $fromArray = $keys[0] == '*' ? false : true;
+                } else {
+                    $fromArray = $keys[0] == '*' ? true : false;
+                }
             } else {
-                $fromArray = $keys[0] == '*' ? true : false;
+                return $datas;
             }
 
             for ($i = 0; $i < count($keys); $i++) {
@@ -326,6 +331,10 @@ class Validator
                 return new DateLessThanRule();
             case 'date_between':
                 return new DateBetweenRule();
+            case 'typeis':
+            case 'type_is':
+            case 'is':
+                return new TypeIs();
             default:
                 throw new Exception("Rule '{$ruleName}' not supported.");
         }
