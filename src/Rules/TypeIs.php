@@ -7,9 +7,9 @@ use Exception;
 
 class TypeIs extends Rule
 {
-    public function validate($field, $value, $parameters): bool
+    public function validate($field, $values, $parameters): bool
     {
-        if ($value == '' || $value == null || empty($value)) {
+        if ($values == '' || $values == null || empty($values)) {
             return true;
         }
 
@@ -18,20 +18,37 @@ class TypeIs extends Rule
         }
 
         $parameters = is_array($parameters) ? $parameters[0] : $parameters;
-        
-        if (strpos($field, '.') !== false || is_array($field)) {
-            if (is_array($value)) {
+
+
+        if (is_array($field)) {
+            if (is_array($values)) {
                 $checkValue = [];
 
-                foreach($value as $key => $val) {
+                foreach ($values as $key => $val) {
                     $checkValue[$key] = $this->check($val, $parameters);
                 }
-                
+
+                return in_array(false, $checkValue) ? false : true;
+            } else if (is_string($values)) {
+                return $this->check($values, $parameters);
+            } else {
+                return $this->check($values, $parameters);
+            }
+
+            return $this->check($values, $parameters);
+        } else if (strpos($field, '.') !== false) {
+            if (is_array($values)) {
+                $checkValue = [];
+
+                foreach ($values as $key => $val) {
+                    $checkValue[$key] = $this->check($val, $parameters);
+                }
+
                 return in_array(false, $checkValue) ? false : true;
             }
         }
 
-        return $this->check($value, $parameters);
+        return $this->check($values, $parameters);
     }
 
     public function getErrorMessage($field, $parameters): string
@@ -40,30 +57,30 @@ class TypeIs extends Rule
             $fields = explode('.', $field);
             return "One of the '{$fields[0]}' value type must be : {$parameters}.";
         } else {
-            return "The {$field} type must be : {$parameters}.";
+            return "The {$field} type must be : {$parameters[0]}.";
         }
     }
 
-    private function check(Mixed $value, String $type) {
+    private function check(Mixed $value, String $type)
+    {
         switch ($type) {
-            case 'bool': 
-            case 'boolean': 
+            case 'bool':
+            case 'boolean':
                 return is_bool($value);
                 break;
             case 'numeric':
-            case 'number': 
+            case 'number':
                 return is_numeric($value);
                 break;
-            case 'string': 
-            case 'str': 
+            case 'string':
+            case 'str':
                 return is_string($value);
                 break;
-            case 'array': 
+            case 'array':
                 return is_array($value);
                 break;
             default:
                 throw new Exception("Compare rule {$type} not allowed!");
         }
-
     }
 }
