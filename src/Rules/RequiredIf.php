@@ -18,6 +18,16 @@ class RequiredIfRule extends RuleWithRequest
      */
     public function validate($field, $value, $request, $parameters): bool
     {
+        if (is_bool($value)) {
+            $value = $value ? 'true' : 'false';
+        } else if (is_numeric($value) && ($value == 0)) {
+            $value = "0";
+        }
+
+        if ((!is_string($value) && !is_numeric($value) && !is_bool($value)) && empty($value)) {
+            return false;
+        }
+
         if ($value == '' || $value == null || empty($value)) {
             return true;
         }

@@ -16,7 +16,15 @@ class RequiredRule extends Rule
      */
     public function validate($field, $values, $parameters): bool
     {
-        if (empty($values)) {
+        if (is_bool($values)) {
+            $values = $values ? 'true' : 'false';
+        } else if (is_numeric($values) && ($values == 0)) {
+            $values = "0";
+        } else if (is_string($values) && ($values == false)) {
+            $values = "0";
+        }
+
+        if ((!is_string($values) && !is_numeric($values) && !is_bool($values)) && empty($values)) {
             return false;
         }
 
@@ -24,15 +32,17 @@ class RequiredRule extends Rule
             if (is_array($values)) {
                 foreach ($values as $value) {
                     if (is_string($value)) {
-                        if (empty(trim($value))) { return false; }
+                        return !(trim($value) == "");
                     } else {
-                        if (empty($value)) { return false; }
+                        if (empty($value)) {
+                            return false;
+                        }
                     }
                 }
-                
+
                 return !empty($values);
             } else if (is_string($values)) {
-                return !empty(trim($values));
+                return !(trim($values) == "");
             } else {
                 return !empty($values);
             }
@@ -41,7 +51,8 @@ class RequiredRule extends Rule
         }
 
         if (is_string($values)) {
-            return !empty(trim($values));
+            // return !empty(trim($values));
+            return !(trim($values) == "");
         } else {
             return !empty($values);
         }

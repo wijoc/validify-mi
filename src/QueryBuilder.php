@@ -225,7 +225,7 @@ class QueryBuilder
                 break;
             case 'isnotnull':
             case 'is not null':
-                $whereQuery  = "{$column} IS NULL";
+                $whereQuery  = "{$column} IS NOT NULL";
                 break;
             case 'like':
                 $parameters = $this->_prepareParameters("%$value%");
@@ -294,6 +294,19 @@ class QueryBuilder
                     $whereQuery = "{$column} IN ({$value})";
                 }
                 break;
+            case 'notinsubquery':
+            case 'notin-subquery':
+            case 'not-in-sub-query':
+            case 'not in subquery':
+            case 'not-in subquery':
+            case 'not in sub-query':
+            case 'not-in sub-query':
+                if ($this->wordpress) {
+                    $whereQuery = "{$column} NOT IN ({$value})";
+                } else {
+                    $whereQuery = "{$column} NOT IN ({$value})";
+                }
+                break;
             case 'subquery':
                 $whereQuery = "$column";
                 break;
@@ -323,6 +336,17 @@ class QueryBuilder
                     $whereQuery = "{$column} BETWEEN '" . implode("' AND '", $castedParametersKey) . "'"; // not neccesaraly using implode cause this will always
                 } else {
                     $whereQuery = "{$column} BETWEEN ? AND ?";
+                }
+                break;
+            case 'regexp':
+                if (is_array($value)) {
+                    $value = "(" . implode('|', $value) . ")";
+                }
+
+                if ($this->wordpress) {
+                    $whereQuery = "{$column} REGEXP {$value}";
+                } else {
+                    $whereQuery = "{$column} REGEXP {$value}";
                 }
                 break;
             case 'notin':
@@ -386,6 +410,7 @@ class QueryBuilder
             case '>':
             case '>=':
             case '<=':
+            case '<':
                 $parameters  = $this->_prepareParameters($value, false);
                 $this->whereParameters[] = $parameters;
 
@@ -518,12 +543,22 @@ class QueryBuilder
     {
         if (is_array($column)) {
             if (array_is_list($column)) {
-                $column = implode(', ', $column);
-                $this->orderBy = "{$column} {$direction}";
+                $this->orderBy = '';
+                foreach ($column as $col) {
+                    $this->orderBy .= "{$col} {$direction}";
+
+                    if ($col !== end($column)) {
+                        $this->orderBy .= ', ';
+                    }
+                }
             } else {
                 $this->orderBy = '';
                 foreach ($column as $field => $direction) {
                     $this->orderBy .= "{$field} {$direction}";
+
+                    if ($field !== array_key_last($column)) {
+                        $this->orderBy .= ', ';
+                    }
                 }
             }
         } else if (is_string($column)) {
@@ -718,7 +753,7 @@ class QueryBuilder
      * @param string $type - accepted value : self | left | right | inner | full or full-outer | cross
      * @return self
      */
-    public function join(string $table, string $firstColumn, string $operator, string $secondColumn, array $conditions = [], ?string $type = 'self', ?string $alias = NULL): self
+    public function join(string $table, string $firstColumn, string $operator, string $secondColumn, array $conditions = [], ?string $type = 'self', ?string $alias = NULL, Bool $joinSubquery = false): self
     {
         if (!in_array(strtolower($type), ["self", "left", "right", "inner", "full", "full-outer", "cross"])) {
             throw new Exception("Join type must be one of : self | left | right | inner | full or full-outer | cross!");
@@ -743,7 +778,8 @@ class QueryBuilder
             'firstColumn'   => $firstColumn,
             'secondColumn'  => $secondColumn,
             'operator'      => $operator,
-            'conditions'    => array_is_list($conditions) ? $conditions : [$conditions]
+            'conditions'    => array_is_list($conditions) ? $conditions : [$conditions],
+            'joinSubquery'  => $joinSubquery
         ];
 
         return $this;
@@ -830,20 +866,19 @@ class QueryBuilder
      */
     public function update(array $data = [], array $condition = [], string $execution = 'execute'): mixed
     {
-        if ((!isset($this->where) || empty($this->where)) && (empty($condition) || $condition == NULL)) {
+        if ((!isset($this->where) || empty($this->where)) && (empty($condition) || $condition === NULL)) {
             throw new Exception('Please provide condition!');
         } else if (!empty($condition)) {
-            // if (!is_array($this->where) || $this->where == NULL) {
-            //     $this->where = [];
-            // }
-
-            // $this->where = array_unique(array_merge($this->where, $condition));
             foreach ($condition as $field => $condition) {
-                if (!isset($condition['operator']) || !in_array($condition['operator'], ['isnull', 'is null', 'isnotnull', 'is not null', 'like', 'in', 'notin', 'not in', '!=', '<>', '>', '>=', '<=', '='])) {
-                    continue;
-                }
+                if (is_array($condition)) {
+                    if (!isset($condition['operator']) || !in_array($condition['operator'], ['isnull', 'is null', 'isnotnull', 'is not null', 'like', 'in', 'notin', 'not in', '!=', '<>', '>', '>=', '<=', '='])) {
+                        continue;
+                    }
 
-                $this->where($field, $condition['operator'], $condition['value'], (isset($condition['relation']) ? $condition['relation'] : 'AND'), (isset($condition['cast']) ? $condition['cast'] : []), (isset($condition['strict']) ? $condition['strict'] : false));
+                    $this->where($field, $condition['operator'], $condition['value'], (isset($condition['relation']) ? $condition['relation'] : 'AND'), (isset($condition['cast']) ? $condition['cast'] : []), (isset($condition['strict']) ? $condition['strict'] : false));
+                } else {
+                    $this->where($field, "=", $condition, 'AND', [], false, false);
+                }
             }
         }
 
@@ -942,12 +977,30 @@ class QueryBuilder
         return $this;
     }
 
+    /**
+     * Delete query builder function
+     *
+     * @param array $condition - must be array assoc with "field name" as key, and each "value" is array assoc with key : operator, cast, strict, relation
+     * @param string $execution - "build" to return string sql query, "execute" to run the query and return results. Default is "execute"
+     * @return mixed
+     */
     public function delete(array $condition = [], string $execution = 'execute'): mixed
     {
-        if ((!isset($this->where) || empty($this->where)) && (empty($condition) || $condition == NULL)) {
+        if ((!isset($this->where) || empty($this->where)) && (empty($condition) || $condition === NULL)) {
             throw new Exception('Please provide condition!');
         } else if (!empty($condition)) {
-            $this->where = array_unique(array_merge($this->where, $condition));
+            // $this->where = array_unique(array_merge($this->where, $condition));
+            foreach ($condition as $field => $condition) {
+                if (is_array($condition)) {
+                    if (!isset($condition['operator']) || !in_array($condition['operator'], ['isnull', 'is null', 'isnotnull', 'is not null', 'like', 'in', 'notin', 'not in', '!=', '<>', '>', '>=', '<=', '='])) {
+                        continue;
+                    }
+
+                    $this->where($field, $condition['operator'], $condition['value'], (isset($condition['relation']) ? $condition['relation'] : 'AND'), (isset($condition['cast']) ? $condition['cast'] : []), (isset($condition['strict']) ? $condition['strict'] : false));
+                } else {
+                    $this->where($field, "=", $condition, 'AND', [], false, false);
+                }
+            }
         }
 
         $this->delete = true;
@@ -1240,15 +1293,15 @@ class QueryBuilder
 
                 // $values .= "('" . implode("', '", $parameterPlaceholders) . "')";
                 $values .= "(";
-                foreach ($parameterPlaceholders as $placeholder) {
-                    if ($placeholder[0] == 'query:' || strpos($placeholder, 'query:') === 0 || strpos($placeholder, 'query:') === "0") {
-                        list($queryPlaceHolder, $data) = explode('query:', $placeholder);
+                for ($i = 0; $i < count($parameterPlaceholders); $i++) {
+                    if ($parameterPlaceholders[$i][0] == 'query:' || strpos($parameterPlaceholders[$i], 'query:') === 0 || strpos($parameterPlaceholders[$i], 'query:') === "0") {
+                        list($queryPlaceHolder, $data) = explode('query:', $parameterPlaceholders[$i]);
                         $values .= $data;
                     } else {
-                        $values .= "'{$placeholder}'";
+                        $values .= "'{$parameterPlaceholders[$i]}'";
                     }
 
-                    if ($placeholder !== end($parameterPlaceholders)) {
+                    if ($i < count($parameterPlaceholders) - 1) {
                         $values .= ', ';
                     }
                 }
@@ -1286,7 +1339,7 @@ class QueryBuilder
             $values = "";
             $parametersKey = [];
             foreach ($this->upsertData as $data) {
-                if ($data[0] == 'query:' || strpos($data, 'query:') === 0 || strpos($data, 'query:') === "0") {
+                if ((is_array($data) && $data[0] == 'query:') || (is_string($data) && strpos($data, 'query:') === 0) || (is_string($data) && strpos($data, 'query:') === "0")) {
                     // list($queryPlaceHolder, $data) = explode('query:', $data);
                     $parametersKey[] = $data;
                 } else {
@@ -1298,15 +1351,15 @@ class QueryBuilder
 
             // $values .= "('" . implode("', '", $parametersKey) . "')";
             $values .= "(";
-            foreach ($parametersKey as $placeholder) {
-                if ($placeholder[0] == 'query:' || strpos($placeholder, 'query:') === 0 || strpos($placeholder, 'query:') === "0") {
-                    list($queryPlaceHolder, $data) = explode('query:', $placeholder);
+            for ($i = 0; $i < count($parametersKey); $i++) {
+                if ((is_array($parametersKey[$i]) && $parametersKey[$i][0] == 'query:') || strpos($parametersKey[$i], 'query:') === 0 || strpos($parametersKey[$i], 'query:') === "0") {
+                    list($queryPlaceHolder, $data) = explode('query:', $parametersKey[$i]);
                     $values .= $data;
                 } else {
-                    $values .= "'{$placeholder}'";
+                    $values .= "'{$parametersKey[$i]}'";
                 }
 
-                if ($placeholder !== end($parametersKey)) {
+                if ($i < count($parametersKey) - 1) {
                     $values .= ', ';
                 }
             }
@@ -1314,9 +1367,8 @@ class QueryBuilder
         }
 
         $update = '';
-
         foreach ($this->upsertSetData as $field => $setValues) {
-            if ($setValues == NULL) {
+            if ($setValues === NULL) {
                 $update .= "{$field} = NULL";
             } else if (is_string($setValues)) {
                 if (strpos($setValues, 'query:') === 0 || strpos($setValues, 'query:') === "0") {
@@ -1377,7 +1429,7 @@ class QueryBuilder
                 $setClause[] = "`{$column}` = ?";
             }
 
-            if (!isset($this->parameters) || $this->parameters == NULL) {
+            if (!isset($this->parameters) || $this->parameters === NULL) {
                 $this->parameters = [];
             }
 
@@ -1421,9 +1473,13 @@ class QueryBuilder
                     break;
             }
 
-            $query .= " {$join['table']}";
+            if ($join['joinSubquery'] && !(substr($join['table'], 0, 1) === '(' && substr($join['table'], -1) === ')')) {
+                $query .= " ({$join['table']})";
+            } else {
+                $query .= " {$join['table']}";
+            }
             if (isset($join['alias']) && $join['alias'] !== NULL && $join['alias'] !== "") {
-                $query .= " {$join['alias']}";
+                $query .= " AS {$join['alias']}";
             }
 
             $query .= " ON {$join['firstColumn']} {$join['operator']} {$join['secondColumn']}";
@@ -1434,8 +1490,8 @@ class QueryBuilder
                         foreach ($join['conditions'] as $condition) {
                             $condition['value'] = $this->_prepareQueryValue('where', $condition['value']);
                             $parameter = $this->_prepareParameters($condition['value']);
-                            $this->parameters = $parameter;
-                            $query .= " AND {$condition['column']} {$condition['operator']} " . array_keys($parameter);
+                            $this->parameters[] = $parameter;
+                            $query .= " AND {$condition['column']} {$condition['operator']} " . array_keys($parameter)[0];
                         }
                     }
                 } else {
@@ -1525,7 +1581,7 @@ class QueryBuilder
                         $strlen = strlen($value);
                         $value = substr($value, 0, $strlen - 1);
                     }
-                } else if ($value == NULL) {
+                } else if ($value === NULL) {
                     $value = 'NULL';
                 }
 
@@ -1545,7 +1601,8 @@ class QueryBuilder
         $parameterValue = [];
         if (is_array($this->parameters)) {
             foreach ($this->parameters as $parameter) {
-                $parameterValue = array_merge($parameterValue, array_values($parameter));
+                $paramVal = is_array($parameter) ? array_values($parameter) : $parameter;
+                $parameterValue = array_merge($parameterValue, (is_array($paramVal) ? $paramVal : [$paramVal]));
             }
         }
 
