@@ -151,7 +151,13 @@ class Validator
             if (isset($rules[$rawKeys]) && array_intersect($rules[$rawKeys], $this->is_file_rules)) {
                 $datas = $_FILES[$field];
             } else {
-                $datas = $this->data[$field];
+                if (is_bool($this->data[$field])) {
+                    $values = $this->data[$field] ? 'true' : 'false';
+                } else if (is_numeric($this->data[$field]) && ($this->data[$field] == 0)) {
+                    $values = "0";
+                } else {
+                    $datas = $this->data[$field];
+                }
             }
             $values = [];
 
@@ -197,41 +203,45 @@ class Validator
 
                     $fromArray = true;
                 } else {
-                    if (array_key_exists($keys[$i], $datas)) {
-                        $values = $datas[$keys[$i]];
-                        $datas = $datas[$keys[$i]];
-                    } else {
-                        if ($fromArray) {
-                            $values = [];
-                            foreach ($datas as $data) {
-                                if (!is_array($data)) {
-                                    if (is_string($data) && strpos($data, ',') !== false && in_array('explode', $rules[$rawKeys])) {
-                                        $values[] = explode(',', $data);
-                                    } else {
-                                        $values[] = $data;
-                                    }
-                                    $datas[] = $data;
-                                } else {
-                                    /** Check if arra is multidimensional */
-                                    if (count($datas) == count($datas, COUNT_RECURSIVE)) { // if not
-                                        $values[] = $data;
+                    if (is_array($datas)) {
+                        if (array_key_exists($keys[$i], $datas)) {
+                            $values = $datas[$keys[$i]];
+                            $datas = $datas[$keys[$i]];
+                        } else {
+                            if ($fromArray) {
+                                $values = [];
+                                foreach ($datas as $data) {
+                                    if (!is_array($data)) {
+                                        if (is_string($data) && strpos($data, ',') !== false && in_array('explode', $rules[$rawKeys])) {
+                                            $values[] = explode(',', $data);
+                                        } else {
+                                            $values[] = $data;
+                                        }
                                         $datas[] = $data;
                                     } else {
-                                        if (array_key_exists($keys[$i], $data)) {
-                                            $values[] = $data[$keys[$i]];
-                                            $datas[] = $data[$keys[$i]];
+                                        /** Check if arra is multidimensional */
+                                        if (count($datas) == count($datas, COUNT_RECURSIVE)) { // if not
+                                            $values[] = $data;
+                                            $datas[] = $data;
+                                        } else {
+                                            if (array_key_exists($keys[$i], $data)) {
+                                                $values[] = $data[$keys[$i]];
+                                                $datas[] = $data[$keys[$i]];
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        } else {
-                            if (array_key_exists($keys[$i], $datas)) {
-                                $values = $datas[$keys[$i]];
-                                $datas = $datas[$keys[$i]];
                             } else {
-                                $values = NULL;
+                                if (array_key_exists($keys[$i], $datas)) {
+                                    $values = $datas[$keys[$i]];
+                                    $datas = $datas[$keys[$i]];
+                                } else {
+                                    $values = NULL;
+                                }
                             }
                         }
+                    } else {
+                        $values = $datas;
                     }
                 }
             }
@@ -528,7 +538,7 @@ class Validator
     {
         /** turn into html special char except email */
         if ($rule !== 'email') {
-            $data = htmlspecialchars($data);
+            // $data = htmlspecialchars($data);
         }
 
         switch ($rule):
