@@ -50,6 +50,7 @@ class Validator
     private $isFileRules;
     private $finishValidation = false;
     private $isValidated = false;
+    private $isSanitized = false;
 
     public function __construct(array $data = [], array $rules = [], array $messages = [], array $sanitizer = [])
     {
@@ -516,6 +517,10 @@ class Validator
                     }
                 }
             }
+
+            /** Replace original data with sanitized data */
+            $this->data = $this->sanitized;
+            $this->isSanitized = true;
         }
     }
 
