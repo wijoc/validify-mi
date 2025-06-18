@@ -29,7 +29,7 @@ class NumericRule extends Rule
                     }
                 }
             }
-            
+
             return is_numeric($value);
         } else {
             return is_numeric($value);
