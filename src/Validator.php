@@ -43,11 +43,11 @@ class Validator
     private $messages;
     private $sanitizer;
     private $errors;
-    private $ignored_rules;
-    private $with_request_rules;
-    private $keep_original_parameter;
-    private $parameter_might_contain_colon;
-    private $is_file_rules;
+    private $ignoredRules;
+    private $withRequestRules;
+    private $keepOriginalParameter;
+    private $parameterMightContainColon;
+    private $isFileRules;
     private $finishValidation = false;
     private $isValidated = false;
 
@@ -59,11 +59,11 @@ class Validator
         $this->messages = $messages;
         $this->sanitizer = $sanitizer;
         $this->errors = [];
-        $this->ignored_rules = ['explode'];
-        $this->with_request_rules = ['requiredif', 'required_if', 'date', 'match', 'not_match', 'compare_number', 'greater_than', 'date', 'date_more_than', 'file', 'files', 'is_files', 'max_file_size'];
-        $this->keep_original_parameter = ['regex'];
-        $this->parameter_might_contain_colon = ['regex'];
-        $this->is_file_rules = ['file', 'files', 'is_files'];
+        $this->ignoredRules = ['explode'];
+        $this->withRequestRules = ['requiredif', 'required_if', 'date', 'match', 'not_match', 'compare_number', 'greater_than', 'date', 'date_more_than', 'file', 'files', 'is_files', 'max_file_size'];
+        $this->keepOriginalParameter = ['regex'];
+        $this->parameterMightContainColon = ['regex'];
+        $this->isFileRules = ['file', 'files', 'is_files'];
     }
 
     public static function make(array $data, array $rules, array $messages = [], array $sanitizer = [])
@@ -91,10 +91,10 @@ class Validator
 
             foreach ($rules as $rule) {
                 list($ruleName, $parameters) = $this->parseRule($rule);
-                if (!in_array($ruleName, $this->ignored_rules)) {
+                if (!in_array($ruleName, $this->ignoredRules)) {
                     $ruleInstance = $this->getRuleInstance($ruleName);
 
-                    if (in_array($ruleName, $this->with_request_rules)) {
+                    if (in_array($ruleName, $this->withRequestRules)) {
                         $ruleValidate = $ruleInstance->validate($field, $value, $this->data, $parameters);
                     } else {
                         $ruleValidate = $ruleInstance->validate($field, $value, $parameters);
@@ -148,7 +148,7 @@ class Validator
                 return null;
             }
         } else {
-            if (isset($rules[$rawKeys]) && array_intersect($rules[$rawKeys], $this->is_file_rules)) {
+            if (isset($rules[$rawKeys]) && array_intersect($rules[$rawKeys], $this->isFileRules)) {
                 $datas = $_FILES[$field];
             } else {
                 if (is_bool($this->data[$field])) {
@@ -254,7 +254,7 @@ class Validator
     {
         $parameters = [];
         if (strpos($rule, ':') !== false) {
-            if (in_array($rule, $this->parameter_might_contain_colon)) {
+            if (in_array($rule, $this->parameterMightContainColon)) {
                 $explodeRule = explode(':', $rule);
                 $rule = $explodeRule[0];
                 array_shift($explodeRule);
@@ -263,10 +263,10 @@ class Validator
                 list($rule, $parameterString) = explode(':', $rule, 2);
             }
 
-            if (in_array($rule, $this->with_request_rules)) {
+            if (in_array($rule, $this->withRequestRules)) {
                 $parameters = explode(',', $parameterString);
             } else {
-                if (in_array($rule, $this->keep_original_parameter)) {
+                if (in_array($rule, $this->keepOriginalParameter)) {
                     $parameters = explode(',', $parameterString);
                 } else {
                     $parameters = explode(',', strtolower($parameterString));
