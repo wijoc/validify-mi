@@ -992,7 +992,7 @@ class QueryBuilder
             // $this->where = array_unique(array_merge($this->where, $condition));
             foreach ($condition as $field => $condition) {
                 if (is_array($condition)) {
-                    if (!isset($condition['operator']) || !in_array($condition['operator'], ['isnull', 'is null', 'isnotnull', 'is not null', 'like', 'in', 'notin', 'not in', '!=', '<>', '>', '>=', '<=', '='])) {
+                    if (!isset($condition['operator']) || !in_array($condition['operator'], ['isnull', 'is null', 'isnotnull', 'is not null', 'like', 'in', 'insubquery', 'in-subquery', 'in-sub-query', 'in subquery', 'in sub-query', 'notinsubquery', 'notin-subquery', 'not-in-sub-query', 'not in subquery', 'not-in subquery', 'not in sub-query', 'not-in sub-query', 'subquery', 'between', 'regexp', 'notin', 'not in', '!=', '<>', '>', '>=', '<=', '<', '='])) {
                         continue;
                     }
 
@@ -1176,9 +1176,27 @@ class QueryBuilder
         return $result;
     }
 
+    /**
+     * Execute query function
+     *
+     * @param string $query
+     * @return void
+     */
     private function execute(string $query)
     {
-        return $this->connection->query($query);
+        if (substr_count($query, '?')) {
+            $stmt = $this->connection->prepare($query);
+            $this->_bindParamsArray($stmt, $this->_prepareQueryParameter());
+            $success = $stmt->execute();
+
+            if (is_bool($success) && $success) {
+                return $stmt->get_result();
+            }
+
+            return $success;
+        } else {
+            return $this->connection->query($query);
+        }
     }
 
     /**
@@ -1191,7 +1209,9 @@ class QueryBuilder
         if (array_is_list($this->insertData)) {
             if (isset($this->columns) && !empty($this->columns)) {
                 if (is_array($this->columns)) {
-                    $columns = implode(', ', $this->columns);
+                    $columns = "`";
+                    $columns .= implode('`, `', $this->columns);
+                    $columns .= "`";
                 } else {
                     $columns = $this->columns;
                 }
@@ -1203,7 +1223,10 @@ class QueryBuilder
             }
 
             if (is_array($columns)) {
-                $columns    = implode(', ', $columns);
+                $strColumns = "`";
+                $strColumns .= implode('`, `', $columns);
+                $strColumns .= "`";
+                $columns = $strColumns;
             }
 
             $values     = '';
@@ -1222,7 +1245,12 @@ class QueryBuilder
                     $this->parameters[]         = $parameter;
                 }
 
-                $values .= "('" . implode("', '", $parameterPlaceholders) . "')";
+
+                if ($this->wordpress) {
+                    $values .= "('" . implode("', '", $parameterPlaceholders) . "')";
+                } else {
+                    $values .= "(" . implode(", ", $parameterPlaceholders) . ")";
+                }
                 if ($i < (count($this->insertData) - 1)) {
                     $values .= ', ';
                 }
@@ -1230,12 +1258,16 @@ class QueryBuilder
         } else {
             if (isset($this->columns) && !empty($this->columns)) {
                 if (is_array($this->columns)) {
-                    $columns = implode(', ', $this->columns);
+                    $columns = "`";
+                    $columns .= implode('`, `', $this->columns);
+                    $columns .= "`";
                 } else {
                     $columns = $this->columns;
                 }
             } else {
-                $columns = implode(', ', array_keys($this->insertData));
+                $columns = "`";
+                $columns .= implode('`, `', array_keys($this->insertData));
+                $columns .= "`";
             }
 
             $values = "";
@@ -1509,7 +1541,7 @@ class QueryBuilder
      * @param mixed $value
      * @return array
      */
-    private function _prepareParameters(mixed $value, bool $bindType = true): array
+    private function _prepareParameters(mixed $value, bool $bindType = false): array
     {
         /** Determine the data type of the value */
         switch (true) {
@@ -1656,6 +1688,35 @@ class QueryBuilder
                 return ($strict ? "CAST(`{$source}` AS BINARY)" : "CAST({$source} AS BINARY)");
             default:
                 return $source;
+        }
+    }
+
+    /**
+     * Set statement params function
+     *
+     * @param Object $stmt
+     * @param array $params
+     * @return void
+     */
+    private function _bindParamsArray(Object $stmt, array $params)
+    {
+        if (!empty($params)) {
+            $types = '';
+            $values = [];
+
+            foreach ($params as $param) {
+                if (is_int($param)) {
+                    $types .= 'i';
+                } elseif (is_float($param)) {
+                    $types .= 'd';
+                } else {
+                    $types .= 's';
+                }
+
+                $values[] = $param;
+            }
+
+            $stmt->bind_param($types, ...$values);
         }
     }
 
